@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [{
+       "type": "node",
+       "request": "launch",
+       "name": "Run",
+       "program": "${workspaceRoot}/node_modules/jasmine/bin/jasmine",
+       "protocol": "inspector",
+       "args": [
+           "JASMINE_CONFIG_PATH=${workspaceRoot}/jasmine.json"
+       ],
+       "console": "integratedTerminal"
+    }]
+}

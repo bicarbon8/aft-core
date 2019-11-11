@@ -1,0 +1,49 @@
+export module Wait {
+    /**
+     * function will execute an asynchronous action and await a result repeating execution every 1 millisecond until a 
+     * result of 'true' is returned or the 'msDuration' specified has elapsed. If the action never returns 'true' and 
+     * the 'msDuration' elapses, an Error will be thrown by way of a Promise.reject
+     * @param condition an asynchronous action that should be executed until it returns 'true' or the 'msDuration' has expired
+     * @param msDuration the maximum amount of time to wait for the 'condition' to return 'true'
+     * @param onFailAction an action to perform on each attempt resulting in failure ('Error' or 'false') of the 'condition'
+     */
+    export async function forCondition(condition: () => boolean | PromiseLike<boolean>, msDuration: number, onFailAction?: Function) : Promise<void> {
+        let result: boolean = false;
+        let attempts: number = 0;
+        let startTime: number = new Date().getTime();
+        let now: number;
+        let elapsed: number;
+        let ex: ExceptionInformation;
+
+        do {
+            try {
+                attempts++;
+                result = await condition();
+            } catch (e) {
+                ex = e;
+                try {
+                    if (onFailAction) {onFailAction();}
+                } catch {}
+            }
+            await Wait.forDuration(1);
+            now = new Date().getTime();
+            elapsed = now - startTime;
+        } while (!result && elapsed < msDuration);
+
+        if (result) {
+            return Promise.resolve();
+        }
+            
+        return Promise.reject("unable to successfully execute condition: '" + condition.toString() + "' within '" + attempts + "' attempts due to: '" + ex + "'");
+    }
+
+    /**
+     * function will wait for the specified amount of time
+     * @param msDuration the amount of time to wait before resuming
+     */
+    export async function forDuration(msDuration: number): Promise<void> {
+        return new Promise((resolve) => {
+            setTimeout(resolve, msDuration);
+        });
+    }
+}
