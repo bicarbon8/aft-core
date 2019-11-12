@@ -68,11 +68,11 @@ describe('TestLog', () => {
         let opts: TestLogOptions = new TestLogOptions('calls ILoggingPlugin.finalise on TestLog.dispose');
         let logger: TestLog = new TestLog(opts);
 
-        logger.info(RandomGenerator.getString(18));
+        await logger.info(RandomGenerator.getString(18));
 
         expect(LoggingPluginStore.finalised).toEqual(false);
 
-        logger.dispose();
+        await logger.dispose();
 
         expect(LoggingPluginStore.finalised).toEqual(true);
     });

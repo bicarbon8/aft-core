@@ -62,31 +62,47 @@ export class TestLog implements IDisposable {
         
         let plugins: ILoggingPlugin[] = ILoggingPlugin.getPlugins();
         for (var i=0; i<plugins.length; i++) {
+            let p: ILoggingPlugin = plugins[i];
             try {
-                await plugins[i].log(level, message);
+                let enabled: boolean = await p.enabled();
+                if (enabled) {
+                    await p.log(level, message);
+                }
             } catch (e) {
-                console.log(TestLog.format(this.name, TestLogLevel.warn, "unable to send log message to '" + plugins[i].name + "' plugin due to: " + e));
+                console.log(TestLog.format(this.name, TestLogLevel.warn, "unable to send log message to '" + p.name + "' plugin due to: " + e));
             }
-        };
+        }
     }
 
     async logResult(result: TestResult): Promise<void> {
         let plugins: ILoggingPlugin[] = ILoggingPlugin.getPlugins();
         for (var i=0; i<plugins.length; i++) {
+            let p: ILoggingPlugin = plugins[i];
             try {
-                let r: TestResult = result.clone();
-                await plugins[i].logResult(r);
+                let enabled: boolean = await p.enabled();
+                if (enabled) {
+                    let r: TestResult = result.clone();
+                    await p.logResult(r);
+                }
             } catch (e) {
-                console.log(TestLog.format(this.name, TestLogLevel.warn, "unable to send result to '" + plugins[i].name + "' plugin due to: " + e));
+                console.log(TestLog.format(this.name, TestLogLevel.warn, "unable to send result to '" + p.name + "' plugin due to: " + e));
             }
-        };
+        }
     }
 
     async dispose(error?: Error): Promise<void> {
         let plugins: ILoggingPlugin[] = ILoggingPlugin.getPlugins();
         for (var i=0; i<plugins.length; i++) {
-            await plugins[i].finalise();
-        };
+            let p: ILoggingPlugin = plugins[i];
+            try {
+                let enabled: boolean = await p.enabled();
+                if (enabled) {
+                    await plugins[i].finalise();
+                }
+            } catch (e) {
+                console.log(TestLog.format(this.name, TestLogLevel.warn, `unable to call finalise on ${p.name} due to: ${e}`))
+            }
+        }
     }
 }
 
