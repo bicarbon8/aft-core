@@ -2,6 +2,10 @@
   "name": "aft-core",
   "version": "1.0.0",
   "description": "Automation Framework for Testing (AFT) package supporting JavaScript unit, integration and functional testing",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bicarbon8/aft-core.git"
+  },
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "scripts": {
@@ -19,8 +23,8 @@
     "integration",
     "functional"
   ],
-  "author": "Jason Holt Smith",
-  "license": "ISC",
+  "author": "Jason Holt Smith <bicarbon8@gmail.com>",
+  "license": "MIT",
   "dependencies": {
     "es6-promise": "^4.2.8",
     "uuid": "3.3.3"
