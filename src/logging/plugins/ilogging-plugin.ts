@@ -1,5 +1,6 @@
 import { TestLogLevel } from "../test-log-level";
 import { TestResult } from "../../integrations/test-cases/test-result";
+import { Constructor } from "../../construction/constructor";
 
 export interface ILoggingPlugin {
     name: string;
@@ -12,16 +13,12 @@ export interface ILoggingPlugin {
 }
 
 export namespace ILoggingPlugin {
-    type Constructor<T> = {
-        new (...args: any[]): T;
-        readonly prototype: T;
-    }
-    const plugins: ILoggingPlugin[] = [];
-    export function getPlugins(): ILoggingPlugin[] {
-        return plugins;
+    const pluginConstructors: Constructor<ILoggingPlugin>[] = [];
+    export function getPluginConstructors(): Constructor<ILoggingPlugin>[] {
+        return pluginConstructors;
     }
     export function register<T extends Constructor<ILoggingPlugin>>(ctor: T) {
-        plugins.push(new ctor());
+        pluginConstructors.push(ctor);
         return ctor;
     }
 }

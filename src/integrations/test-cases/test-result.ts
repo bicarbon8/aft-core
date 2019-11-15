@@ -26,7 +26,7 @@ export class TestResult implements IClonable {
             if (m["clone"]) {
                 m = (m as IClonable).clone();
             }
-            this.MetaData[key] = m;
+            c.MetaData[key] = m;
         };
 
         return c;
