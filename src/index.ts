@@ -2,6 +2,7 @@
 export * from './configuration/test-config';
 /** construction */
 export * from './construction/iinitialise-options';
+export * from './construction/constructor';
 /** extensions */
 export * from './extensions/ellipsis-location';
 export * from './extensions/set-extensions';
