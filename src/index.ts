@@ -21,6 +21,8 @@ export * from './helpers/machine-info';
 export * from './helpers/random-generator';
 export * from './helpers/using';
 export * from './helpers/wait';
+export * from './helpers/func';
+export * from './helpers/action';
 /** logging */
 export * from './logging/plugins/ilogging-plugin';
 export * from './logging/test-log';
@@ -29,3 +31,6 @@ export * from './logging/test-log-level';
 /** wrappers */
 export * from './wrappers/test-wrapper';
 export * from './wrappers/test-wrapper-options';
+export * from './wrappers/should';
+export * from './wrappers/validation-error';
+export * from './wrappers/validator';

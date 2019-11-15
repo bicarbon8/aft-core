@@ -10,6 +10,8 @@ import '../extensions/string-extensions';
 import '../extensions/set-extensions';
 import { TestException } from "../integrations/test-cases/test-exception";
 import { Convert } from "../helpers/convert";
+import { Validator } from "./validator";
+import { Action } from "../helpers/action";
 
 /**
  * provides helper methods and properties for use when integration or functional testing
@@ -100,13 +102,13 @@ export class TestWrapper implements IDisposable {
 
     /**
      * DANGER!!: this method does not catch 'jasmine.expect' failures unless
-     * you've set 'stopSpecOnExpectationFailure' to 'true' in your jasmine.json.
+     * you've wrapped the expect call using 'should(expect(actual).toBe(expected)).because('reason');'
      * this function runs the passed in test action and then calls 'addTestResult'
      * based on the results of the call
      * @param testId the test ID being validated
      * @param action the test action being performed
      */
-    async check(testId: string, action: Function): Promise<void> {
+    async check(testId: string, action: Action<void>): Promise<void> {
         let err: Error = await this.runAction(action);
         
         if (err) {
@@ -118,15 +120,16 @@ export class TestWrapper implements IDisposable {
     }
 
     /**
-     * runs the passed in action and returns any Error
-     * thrown instead of letting the Error be thrown
+     * runs the passed in action, passing in a new Validator
+     * as an argument and returns any Errors thrown
+     * instead of letting the Error out
      * @param action the action to run
      */
-    async runAction(action: Function): Promise<Error> {
+    async runAction(action: Action<void>): Promise<Error> {
         let err: Error = null;
         if (action) {
             try {
-                await action();
+                action();
             } catch (e) {
                 err = e;
             }

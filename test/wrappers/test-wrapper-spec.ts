@@ -1,6 +1,7 @@
 import { TestWrapper } from "../../src/wrappers/test-wrapper";
 import { TestWrapperOptions } from "../../src/wrappers/test-wrapper-options";
 import { TestStatus } from "../../src/integrations/test-cases/test-status";
+import { should } from "../../src/wrappers/should";
 
 let consoleLog = console.log;
 describe('TestWrapper instantiation', () => {
@@ -42,7 +43,8 @@ describe('TestWrapper instantiation', () => {
         spyOn(tw, 'addTestResult').and.callThrough();
 
         await tw.check('C1234', () => {
-            expect(true).toBe(true);
+            should(() => expect(true).toBe(true))
+            .because('true is true so why did we get an error?');
         });
 
         expect(tw.addTestResult).toHaveBeenCalledWith('C1234', TestStatus.Passed);
@@ -59,6 +61,27 @@ describe('TestWrapper instantiation', () => {
         try {
             await tw.check('C1234', () => {
                 throw expectedErr;
+            });
+        } catch (e) {
+            expect(true).toBe(false); // error if we threw
+        }
+
+        expect(tw.addTestResult).toHaveBeenCalledWith('C1234', TestStatus.Failed, jasmine.any(String));
+        expect(tw.errors).toContain(expectedErr);
+    });
+
+    it('can use Validator to catch any failed expectations inside a TestWrapper.check call', async () => {
+        let name: string = 'will log test result on successful completion of TestWrapper.check method call';
+        let options: TestWrapperOptions = new TestWrapperOptions(name);
+        options.testCases.addRange('C1234', 'C2345');
+        let tw: TestWrapper = new TestWrapper(options);
+        spyOn(tw, 'addTestResult').and.callThrough();
+
+        let expectedErr: Error = new Error('true is not equal to false');
+        try {
+            await tw.check('C1234', () => {
+                should(() => false) // simulate 'expect(true).toBe(false)' result
+                .because('true is not equal to false');
             });
         } catch (e) {
             expect(true).toBe(false); // error if we threw
