@@ -2,6 +2,7 @@ import { TestWrapper } from "../../src/wrappers/test-wrapper";
 import { TestWrapperOptions } from "../../src/wrappers/test-wrapper-options";
 import { TestStatus } from "../../src/integrations/test-cases/test-status";
 import { should } from "../../src/wrappers/should";
+import { RandomGenerator, Wait } from "../../src";
 
 let consoleLog = console.log;
 describe('TestWrapper instantiation', () => {
@@ -89,5 +90,59 @@ describe('TestWrapper instantiation', () => {
 
         expect(tw.addTestResult).toHaveBeenCalledWith('C1234', TestStatus.Failed, jasmine.any(String));
         expect(tw.errors).toContain(expectedErr);
+    });
+
+    it('check can handle async function', async () => {
+        let opts: TestWrapperOptions = new TestWrapperOptions('check can handle async function');
+        opts.testCases.add('C1234');
+        let tw: TestWrapper = new TestWrapper(opts);
+        let foo: number = 0;
+
+        await tw.check('C1234', async () => {
+            await Wait.forDuration(1000);
+            foo++;
+        });
+
+        expect(foo).toEqual(1);
+    });
+
+    it('check can handle synchronous function', async () => {
+        let opts: TestWrapperOptions = new TestWrapperOptions('check can handle async function');
+        opts.testCases.add('C1234');
+        let tw: TestWrapper = new TestWrapper(opts);
+        let foo: number = 0;
+
+        await tw.check('C1234', () => {
+            foo++;
+        });
+
+        expect(foo).toEqual(1);
+    });
+
+    it('runAction can handle async function', async () => {
+        let opts: TestWrapperOptions = new TestWrapperOptions('runAction can handle async function');
+        let tw: TestWrapper = new TestWrapper(opts);
+        let foo: number = 0;
+
+        let e: Error = await tw.runAction(async () => {
+            await Wait.forDuration(1000);
+            foo++;
+        });
+
+        expect(e).toBeNull();
+        expect(foo).toEqual(1);
+    });
+
+    it('runAction can handle synchronous function', async () => {
+        let opts: TestWrapperOptions = new TestWrapperOptions('runAction can handle async function');
+        let tw: TestWrapper = new TestWrapper(opts);
+        let foo: number = 0;
+
+        let e: Error = await tw.runAction(() => {
+            foo++;
+        });
+
+        expect(e).toBeNull();
+        expect(foo).toEqual(1);
     });
 });

@@ -129,7 +129,7 @@ export class TestWrapper implements IDisposable {
         let err: Error = null;
         if (action) {
             try {
-                action();
+                await Promise.resolve(action());
             } catch (e) {
                 err = e;
             }
