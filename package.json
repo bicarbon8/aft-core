@@ -9,7 +9,7 @@
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "scripts": {
-    "pretest": "tsc",
+    "pretest": "tsc --declaration",
     "posttest": "",
     "build": "tsc --declaration",
     "test": "jasmine JASMINE_CONFIG_PATH=./jasmine.json"
