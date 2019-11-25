@@ -12,8 +12,7 @@
     "pretest": "tsc",
     "posttest": "",
     "build": "tsc --declaration",
-    "test": "jasmine JASMINE_CONFIG_PATH=./jasmine.json",
-    "prepare": "tsc --declaration"
+    "test": "jasmine JASMINE_CONFIG_PATH=./jasmine.json"
   },
   "keywords": [
     "aft",
