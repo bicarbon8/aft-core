@@ -25,6 +25,10 @@
   ],
   "author": "Jason Holt Smith <bicarbon8@gmail.com>",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bicarbon8/aft-core/issues"
+  },
+  "homepage": "https://github.com/bicarbon8/aft-core#readme",
   "dependencies": {
     "es6-promise": "^4.2.8",
     "uuid": "3.3.3"
