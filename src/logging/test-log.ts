@@ -3,27 +3,16 @@ import { TestResult } from "../integrations/test-cases/test-result";
 import { ILoggingPlugin } from "./plugins/ilogging-plugin";
 import { IDisposable } from "../helpers/idisposable";
 import { TestLogLevel } from "./test-log-level";
-import { Constructor } from "../construction/constructor";
+import { PluginLoader } from "../construction/plugin-loader";
 
 export class TestLog implements IDisposable {
     name: string;
     stepCount: number = 0;
     options: TestLogOptions;
-
-    private plugins: ILoggingPlugin[] = [];
     
     constructor(options: TestLogOptions) {
         this.name = options.name;
         this.options = options;
-        // create plugin instances unique to this logger
-        let pluginCtors: Constructor<ILoggingPlugin>[] = ILoggingPlugin.getPluginConstructors();
-        for (var i=0; i<pluginCtors.length; i++) {
-            try {
-                this.plugins.push(new pluginCtors[i]());
-            } catch (e) {
-                this.warn(`unable to create instance of ILoggingPlugin due to: ${e}`);
-            }
-        }
     }
 
     private _lvl: TestLogLevel;
@@ -32,6 +21,15 @@ export class TestLog implements IDisposable {
             this._lvl = this.options.level || await TestLogOptions.level();
         }
         return this._lvl;
+    }
+
+    private _plugins: ILoggingPlugin[];
+    async plugins(): Promise<ILoggingPlugin[]> {
+        if (!this._plugins) {
+            let names: string[] = this.options.pluginNames || await TestLogOptions.pluginNames();
+            this._plugins = await PluginLoader.load<ILoggingPlugin>(...names);
+        }
+        return this._plugins;
     }
 
     async trace(message: string): Promise<void> {
@@ -72,8 +70,9 @@ export class TestLog implements IDisposable {
             console.log(TestLog.format(this.name, level, message));
         }
         
-        for (var i=0; i<this.plugins.length; i++) {
-            let p: ILoggingPlugin = this.plugins[i];
+        let plugins: ILoggingPlugin[] = await this.plugins();
+        for (var i=0; i<plugins.length; i++) {
+            let p: ILoggingPlugin = plugins[i];
             try {
                 let enabled: boolean = await p.enabled();
                 if (enabled) {
@@ -86,8 +85,9 @@ export class TestLog implements IDisposable {
     }
 
     async logResult(result: TestResult): Promise<void> {
-        for (var i=0; i<this.plugins.length; i++) {
-            let p: ILoggingPlugin = this.plugins[i];
+        let plugins: ILoggingPlugin[] = await this.plugins();
+        for (var i=0; i<plugins.length; i++) {
+            let p: ILoggingPlugin = plugins[i];
             try {
                 let enabled: boolean = await p.enabled();
                 if (enabled) {
@@ -101,12 +101,13 @@ export class TestLog implements IDisposable {
     }
 
     async dispose(error?: Error): Promise<void> {
-        for (var i=0; i<this.plugins.length; i++) {
-            let p: ILoggingPlugin = this.plugins[i];
+        let plugins: ILoggingPlugin[] = await this.plugins();
+        for (var i=0; i<plugins.length; i++) {
+            let p: ILoggingPlugin = plugins[i];
             try {
                 let enabled: boolean = await p.enabled();
                 if (enabled) {
-                    await this.plugins[i].finalise();
+                    await plugins[i].finalise();
                 }
             } catch (e) {
                 console.log(TestLog.format(this.name, TestLogLevel.warn, `unable to call finalise on ${p.name} due to: ${e}`))

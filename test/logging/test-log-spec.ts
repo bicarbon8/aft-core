@@ -4,7 +4,8 @@ import { RandomGenerator } from "../../src/helpers/random-generator";
 import { TestLogOptions } from "../../src/logging/test-log-options";
 import { TestResult } from "../../src/integrations/test-cases/test-result";
 import { using } from "../../src/helpers/using";
-import { ILoggingPlugin } from "../../src/logging/plugins/ilogging-plugin";
+import { LogMessage } from "./log-message";
+import { LoggingPluginStore } from "./logging-plugin-store";
 
 let consoleLog = console.log;
 describe('TestLog', () => {
@@ -22,6 +23,7 @@ describe('TestLog', () => {
 
     it('will send logs to any registered ILoggingPlugin implementations', async () => {
         let opts: TestLogOptions = new TestLogOptions('will send logs to any registered ILoggingPlugin implementations');
+        opts.pluginNames = ['./dist/test/logging/fake-logger'];
         let logger: TestLog = new TestLog(opts);
 
         let messages: string[] = [];
@@ -46,6 +48,7 @@ describe('TestLog', () => {
 
     it('will send cloned TestResult to any registered ILoggingPlugin implementations', async () => {
         let opts: TestLogOptions = new TestLogOptions('will send cloned TestResult to any registered ILoggingPlugin implementations');
+        opts.pluginNames = ['./dist/test/logging/fake-logger'];
         let logger: TestLog = new TestLog(opts);
 
         let result: TestResult = new TestResult();
@@ -66,6 +69,7 @@ describe('TestLog', () => {
 
     it('calls ILoggingPlugin.finalise on TestLog.dispose', async () => {
         let opts: TestLogOptions = new TestLogOptions('calls ILoggingPlugin.finalise on TestLog.dispose');
+        opts.pluginNames = ['./dist/test/logging/fake-logger'];
         let logger: TestLog = new TestLog(opts);
 
         await logger.info(RandomGenerator.getString(18));
@@ -79,6 +83,7 @@ describe('TestLog', () => {
 
     it('implements IDisposable', async () => {
         let opts: TestLogOptions = new TestLogOptions('implements IDisposable');
+        opts.pluginNames = ['./dist/test/logging/fake-logger'];
         let message = RandomGenerator.getString(30);
 
         await using(new TestLog(opts), async (logger) => {
@@ -91,53 +96,3 @@ describe('TestLog', () => {
         expect(LoggingPluginStore.finalised).toEqual(true);
     });
 });
-
-@ILoggingPlugin.register
-class FakeLogger implements ILoggingPlugin {
-    name: string = 'fakelogger';
-    
-    async level(): Promise<TestLogLevel> {
-        return LoggingPluginStore.lvl;
-    }
-
-    async enabled(): Promise<boolean> {
-        return LoggingPluginStore.en;
-    }
-
-    async log(level: TestLogLevel, message: string): Promise<void> {
-        LoggingPluginStore.logs.push(new LogMessage(level, message));
-    }
-
-    async logResult(result: TestResult): Promise<void> {
-        LoggingPluginStore.results.push(result);
-    }
-
-    async finalise(): Promise<void> {
-        LoggingPluginStore.finalised = true;
-    }
-}
-
-module LoggingPluginStore {
-    export var logs: LogMessage[] = [];
-    export var results: TestResult[] = [];
-    export var lvl: TestLogLevel = TestLogLevel.info;
-    export var en: boolean = true;
-    export var finalised: boolean = false;
-
-    export function reset() {
-        logs = [];
-        results = [];
-        lvl = TestLogLevel.info;
-        en = true;
-        finalised = false;
-    }
-}
-
-class LogMessage {
-    level: TestLogLevel;
-    message: string;
-    constructor(level: TestLogLevel, message: string) {
-        this.level = level;
-        this.message = message;
-    }
-}

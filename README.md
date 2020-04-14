@@ -45,9 +45,17 @@ the above results in the following console output:
 ## Actual Benefit of AFT
 the AFT-Core package on it's own contains some helpers for testing, but the actual benefit comes from the plugins. Because the above logging will also send to any registered logging plugins, it becomes easy to create loggers that send to any external system such as TestRail or to log results to Elasticsearch.
 ### Logging Plugin
-to create a logging plugin you simply need to implment the `ILoggingPlugin` interface and add `@ILoggingPlugin.register` above the class.
+to create a logging plugin you simply need to implment the `ILoggingPlugin` interface in a class with a constructor accepting no arguments. Then, in your `aftconfig.json` add the following (where your `ILoggingPlugin` implementations are contained in files at `./relative/path/to/logging-plugin1.ts` and `/full/path/to/logging-plugin2.ts`):
+```json
+{
+    "logging_plugins": "./relative/path/to/logging-plugin1,/full/path/to/logging-plugin2"
+}
+```
+```
+NOTE: if the plugins are referenced as external npm packages you may leave off the path and just reference by package name
+```
+#### Example Logging Plugin
 ```typescript
-@ILoggingPlugin.register
 export class ExternalLogger implements ILoggingPlugin {
     name: string = 'externallogger';
     
