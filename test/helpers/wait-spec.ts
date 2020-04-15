@@ -46,7 +46,7 @@ describe('Wait', () => {
         }
 
         let elapsed: number = Convert.toElapsedMs(now);
-        expect(elapsed).toBeGreaterThan(200);
+        expect(elapsed).toBeGreaterThanOrEqual(200);
         expect(elapsed).toBeLessThan(1000);
         expect(TestHelper.count).toBeGreaterThan(10);
     });
