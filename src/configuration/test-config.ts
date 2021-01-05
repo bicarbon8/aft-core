@@ -3,6 +3,7 @@ import * as path from 'path';
 import { TestLog } from '../logging/test-log';
 import { LoggingLevel } from '../logging/logging-level';
 import { IProcessingResult } from '../helpers/iprocessing-result';
+import { rejects } from 'assert';
 
 export module TestConfig {
     var _aftConfig: object;
@@ -18,7 +19,15 @@ export module TestConfig {
                     if (err) {
                         reject(err.toString());
                     }
-                    resolve(JSON.parse(data.toString('utf8')) as T);
+                    if (data) {
+                        let fileContents: string = data.toString('utf8');
+                        let jsonRes: IProcessingResult = isJsonString(fileContents);
+                        if (jsonRes.success) {
+                            resolve(jsonRes.obj as T);
+                        } else {
+                            reject(jsonRes.message);
+                        }
+                    }
                 });
             } catch (e) {
                 reject(e);
@@ -42,14 +51,14 @@ export module TestConfig {
         return _aftConfig;
     }
 
-    export async function getValueOrDefault<T>(keys: string, defaultVal?: T): Promise<T> {
+    export async function get<T>(keys: string, defaultVal?: T): Promise<T> {
         let conf: object = await aftConfig();
-        let val: any = getValueFromObj(conf, keys)
+        let val: any = getFrom(conf, keys)
         
         return val || defaultVal as T;
     }
 
-    export function getValueFromObj(obj: any, keys: string): any {
+    export function getFrom(obj: any, keys: string): any {
         let result: any = null;
         let keysArray: string[] = keys.split('.');
         let currentKey: string = keysArray.shift();
@@ -57,14 +66,14 @@ export module TestConfig {
         if (currentKey.length > 0) {
             switch(typeof obj) {
                 case "object":
-                    result = getValueFromObj(obj[currentKey], keysArray.join('.'));
+                    result = getFrom(obj[currentKey], keysArray.join('.'));
                     break;
                 case "string":
                     let envRes: IProcessingResult = isEnvVar(obj);
                     if (envRes.success) {
                         let jsonRes: IProcessingResult = isJsonString(envRes.obj);
                         if (jsonRes.success) {
-                            result = getValueFromObj(jsonRes.obj, keys);
+                            result = getFrom(jsonRes.obj, keys);
                             break;
                         }
                     }
@@ -123,14 +132,11 @@ export module TestConfig {
     export function isJsonString(str: string): IProcessingResult {
         let err: string = null;
         if (str) {        
-            let match: RegExpMatchArray = str.match(/^{(([\s]*["]+.*["]+[\s]*)(:)(.*)[,]?)+}$/);
-            if (match && match.length > 0) {
-                try {
-                    let jsonObj: object = JSON.parse(str);
-                    return {obj: jsonObj, success: true} as IProcessingResult;
-                } catch (e) { 
-                    err = `[isJsonString] for string value of '${str}' threw an error of: ${e}`;
-                }
+            try {
+                let jsonObj: object = JSON.parse(str);
+                return {obj: jsonObj, success: true} as IProcessingResult;
+            } catch (e) { 
+                err = `[isJsonString] for string value of '${str}' threw an error of: ${e}`;
             }
         } else {
             err = `[isJsonString] for string value of '${str}' is not valid.`

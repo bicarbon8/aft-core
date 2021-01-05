@@ -18,7 +18,7 @@ export class TestLog implements IDisposable {
     private _options: ILoggingOptions;
     async options(): Promise<ILoggingOptions> {
         if (!this._options) {
-            this._options = await TestConfig.getValueOrDefault<ILoggingOptions>("logging", null);
+            this._options = await TestConfig.get<ILoggingOptions>("logging", null);
         }
         return this._options;
     }
