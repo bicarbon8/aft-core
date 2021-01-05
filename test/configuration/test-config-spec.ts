@@ -1,56 +1,99 @@
-import { RandomGenerator } from "../../src/helpers/random-generator";
 import { TestConfig } from "../../src/configuration/test-config";
-import { TestLogOptions } from "../../src/logging/test-log-options";
-import { TestLogLevel } from "../../src/logging/test-log-level";
+import { RandomGenerator } from "../../src/helpers/random-generator";
+import { LoggingLevel } from "../../src/logging/logging-level";
 
 describe('TestConfig', () => {
-    it('can read from environment variables', async () => {
-        let key: string = RandomGenerator.getString(10);
-        let expected: string = RandomGenerator.getString(12);
-        process.env[key] = expected;
-
-        let actual: string = await TestConfig.getValueOrDefault(key);
-
-        delete process.env[key]; // cleanup
-
-        expect(actual).toEqual(expected);
-    });
-
     it('can read from aftconfig.json config file', async () => {
-        let level: string = await TestConfig.getValueOrDefault(TestLogOptions.LOGLEVEL_KEY, 'wrong_value');
+        let conf: object = await TestConfig.aftConfig();
+        let level: string = conf['logging'].level;
 
-        expect(level).toEqual(TestLogLevel.info.name);
-    });
-
-    it('will override aftconfig.json values with environment variable values', async () => {
-        let expected: string = TestLogLevel.warn.name;
-        process.env[TestLogOptions.LOGLEVEL_KEY] = expected;
-
-        let actual: string = await TestConfig.getValueOrDefault(TestLogOptions.LOGLEVEL_KEY);
-
-        delete process.env[TestLogOptions.LOGLEVEL_KEY]; // cleanup
-
-        expect(actual).toEqual(expected);
-    });
-
-    it('can return a default value if no other configuration is found', async () => {
-        let key: string = RandomGenerator.getString(18);
-        let expected: string = RandomGenerator.getString(22);
-
-        let actual: string = await TestConfig.getValueOrDefault(key, expected);
-
-        expect(actual).toEqual(expected);
+        expect(level).not.toBeNull();
+        expect(level).not.toBeUndefined();
+        expect(level).toEqual(LoggingLevel.info.name);
     });
 
     it('can parse a json file', async () => {
-        let packageJson: Package = await TestConfig.getConfiguration('package.json');
+        let packageJson: PackageJson = await TestConfig.loadJsonFile('package.json');
 
         expect(packageJson.name).toEqual('aft-core');
     });
+
+    it('can modify loaded aftconfig.json object', async () => {
+        let conf: object = await TestConfig.aftConfig();
+
+        let key: string = RandomGenerator.getString(10);
+        let val: string = RandomGenerator.getString(11);
+        conf[key] = val;
+
+        let conf2: object = await TestConfig.aftConfig();
+
+        expect(conf2[key]).toBe(val);
+        delete(conf[key]);
+    });
+
+    it('can load value from environment variable', async () => {
+        let key: string = RandomGenerator.getString(12);
+        let envKey: string = RandomGenerator.getString(14);
+        let expected: FooBar = {
+            foo: RandomGenerator.getString(9),
+            bar: RandomGenerator.getInt(999, 9999)
+        };
+        process.env[envKey] = JSON.stringify(expected);
+        await TestConfig.aftConfig()
+        .then((conf) => {
+            conf[key] = `%${envKey}%`;
+        });
+
+        let actual: FooBar = await TestConfig.getValueOrDefault<FooBar>(key, null);
+        expect(actual).not.toBeNull();
+        expect(actual.foo).toBe(expected.foo);
+        expect(actual.bar).toBe(expected.bar);
+
+        delete(process.env[envKey]);
+    });
+
+    it('will return default if environment variable contains no data', async () => {
+        let key: string = RandomGenerator.getString(11);
+        let envKey: string = RandomGenerator.getString(12);
+        let expected: FooBar = {
+            foo: RandomGenerator.getString(10),
+            bar: RandomGenerator.getInt(99, 999)
+        };
+        await TestConfig.aftConfig()
+        .then((conf) => {
+            conf[key] = `%${envKey}%`;
+        });
+
+        let actual: FooBar = await TestConfig.getValueOrDefault<FooBar>(key, expected);
+        expect(actual).not.toBeNull();
+        expect(actual.foo).toBe(expected.foo);
+        expect(actual.bar).toBe(expected.bar);
+    });
+
+    it('can get expected values from full object by keys', async () => {
+        let actual: object = {
+            foo: RandomGenerator.getString(12),
+            bar: {
+                baz: RandomGenerator.getInt(9, 99),
+                asd: {
+                    jkl: RandomGenerator.getGuid()
+                }
+            }
+        };
+
+        expect(TestConfig.getValueFromObj(actual, "bar.asd.jkl")).toBe(actual['bar']['asd']['jkl']);
+        expect(TestConfig.getValueFromObj(actual, "foo")).toBe(actual['foo']);
+        expect(TestConfig.getValueFromObj(actual, "bar.baz")).toBe(actual['bar']['baz']);
+    });
 });
 
-class Package {
+class PackageJson {
     name: string;
     version: string;
     description: string;
+}
+
+interface FooBar {
+    foo: string;
+    bar: number;
 }

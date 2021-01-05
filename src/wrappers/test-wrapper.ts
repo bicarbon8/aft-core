@@ -1,5 +1,4 @@
 import { TestLog } from "../logging/test-log";
-import { TestLogOptions } from "../logging/test-log-options";
 import { TestWrapperOptions } from "./test-wrapper-options";
 import { RandomGenerator } from "../helpers/random-generator";
 import { TestStatus } from "../integrations/test-cases/test-status";
@@ -36,7 +35,7 @@ export class TestWrapper implements IDisposable {
     }
 
     private initialiseLogger(options: TestWrapperOptions): void {
-        this.logger = options.logger || new TestLog(new TestLogOptions(this.name));
+        this.logger = options.logger || new TestLog(this.name);
     }
 
     private initialiseTestCases(options: TestWrapperOptions) {

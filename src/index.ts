@@ -18,6 +18,7 @@ export * from './helpers/build-info';
 export * from './helpers/convert';
 export * from './helpers/icloneable';
 export * from './helpers/idisposable';
+export * from './helpers/iprocessing-result';
 export * from './helpers/machine-info';
 export * from './helpers/random-generator';
 export * from './helpers/using';
@@ -27,8 +28,8 @@ export * from './helpers/action';
 /** logging */
 export * from './logging/plugins/ilogging-plugin';
 export * from './logging/test-log';
-export * from './logging/test-log-options';
-export * from './logging/test-log-level';
+export * from './logging/ilogging-options';
+export * from './logging/logging-level';
 /** wrappers */
 export * from './wrappers/test-wrapper';
 export * from './wrappers/test-wrapper-options';

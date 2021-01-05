@@ -1,3 +1,6 @@
 {
-    "testloglevel": "info"
+    "logging": {
+        "level": "info",
+        "pluginNames": []
+    }
 }

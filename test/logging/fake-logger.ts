@@ -1,13 +1,13 @@
 import { ILoggingPlugin } from "../../src/logging/plugins/ilogging-plugin";
 import { LoggingPluginStore } from "./logging-plugin-store";
-import { TestLogLevel } from "../../src/logging/test-log-level";
+import { LoggingLevel } from "../../src/logging/logging-level";
 import { LogMessage } from "./log-message";
 import { TestResult } from "../../src/integrations/test-cases/test-result";
 
 export class FakeLogger implements ILoggingPlugin {
     name: string = 'fakelogger';
     
-    async level(): Promise<TestLogLevel> {
+    async level(): Promise<LoggingLevel> {
         return LoggingPluginStore.lvl;
     }
 
@@ -15,7 +15,7 @@ export class FakeLogger implements ILoggingPlugin {
         return LoggingPluginStore.en;
     }
 
-    async log(level: TestLogLevel, message: string): Promise<void> {
+    async log(level: LoggingLevel, message: string): Promise<void> {
         LoggingPluginStore.logs.push(new LogMessage(level, message));
     }
 

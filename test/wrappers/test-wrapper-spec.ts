@@ -15,10 +15,9 @@ describe('TestWrapper instantiation', () => {
     });
     
     it('creates a new TestLog instance', () => {
-        let name: string = 'creates a new TestLog instance';
-        let expectedName: string = 'creates_a_new_TestLog_instance';
+        let expectedName: string = 'creates a new TestLog instance';
 
-        let tw: TestWrapper = new TestWrapper(new TestWrapperOptions(name));
+        let tw: TestWrapper = new TestWrapper(new TestWrapperOptions(expectedName));
         
         expect(tw.logger).not.toBeNull();
         expect(tw.logger.name).toEqual(expectedName);
