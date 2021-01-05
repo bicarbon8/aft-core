@@ -1,5 +1,5 @@
 import { TestWrapper } from "../../src/wrappers/test-wrapper";
-import { TestWrapperOptions } from "../../src/wrappers/test-wrapper-options";
+import { ITestWrapperOptions } from "../../src/wrappers/itest-wrapper-options";
 import { TestStatus } from "../../src/integrations/test-cases/test-status";
 import { should } from "../../src/wrappers/should";
 import { RandomGenerator, Wait } from "../../src";
@@ -17,7 +17,7 @@ describe('TestWrapper instantiation', () => {
     it('creates a new TestLog instance', () => {
         let expectedName: string = 'creates a new TestLog instance';
 
-        let tw: TestWrapper = new TestWrapper(new TestWrapperOptions(expectedName));
+        let tw: TestWrapper = new TestWrapper(expectedName);
         
         expect(tw.logger).not.toBeNull();
         expect(tw.logger.name).toEqual(expectedName);
@@ -25,9 +25,8 @@ describe('TestWrapper instantiation', () => {
 
     it('will log warning on calling AddTestResult for non-existing TestId', async () => {
         let name: string = 'will log warning on calling AddTestResult for non-existing TestId';
-        let options: TestWrapperOptions = new TestWrapperOptions(name);
-        options.testCases.add('C1234');
-        let tw: TestWrapper = new TestWrapper(options);
+        let options: ITestWrapperOptions = {testCases: ['C1234']} as ITestWrapperOptions;
+        let tw: TestWrapper = new TestWrapper(name, options);
         spyOn(tw.logger, 'warn').and.callThrough();
 
         await tw.addTestResult('C4321', TestStatus.Passed, 'should NOT throw');
@@ -37,9 +36,8 @@ describe('TestWrapper instantiation', () => {
 
     it('will log test result on successful completion of TestWrapper.check method call', async () => {
         let name: string = 'will log test result on successful completion of TestWrapper.check method call';
-        let options: TestWrapperOptions = new TestWrapperOptions(name);
-        options.testCases.addRange('C1234', 'C2345');
-        let tw: TestWrapper = new TestWrapper(options);
+        let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345']} as ITestWrapperOptions;
+        let tw: TestWrapper = new TestWrapper(name, options);
         spyOn(tw, 'addTestResult').and.callThrough();
 
         await tw.check('C1234', () => {
@@ -52,9 +50,8 @@ describe('TestWrapper instantiation', () => {
 
     it('will catch any Errors thrown inside a TestWrapper.check call', async () => {
         let name: string = 'will log test result on successful completion of TestWrapper.check method call';
-        let options: TestWrapperOptions = new TestWrapperOptions(name);
-        options.testCases.addRange('C1234', 'C2345');
-        let tw: TestWrapper = new TestWrapper(options);
+        let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345']} as ITestWrapperOptions;
+        let tw: TestWrapper = new TestWrapper(name, options);
         spyOn(tw, 'addTestResult').and.callThrough();
 
         let expectedErr: Error = new Error('fake error');
@@ -72,9 +69,8 @@ describe('TestWrapper instantiation', () => {
 
     it('can use Validator to catch any failed expectations inside a TestWrapper.check call', async () => {
         let name: string = 'will log test result on successful completion of TestWrapper.check method call';
-        let options: TestWrapperOptions = new TestWrapperOptions(name);
-        options.testCases.addRange('C1234', 'C2345');
-        let tw: TestWrapper = new TestWrapper(options);
+        let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345']} as ITestWrapperOptions;
+        let tw: TestWrapper = new TestWrapper(name, options);
         spyOn(tw, 'addTestResult').and.callThrough();
 
         let expectedErr: Error = new Error('true is not equal to false');
@@ -92,9 +88,8 @@ describe('TestWrapper instantiation', () => {
     });
 
     it('check can handle async function', async () => {
-        let opts: TestWrapperOptions = new TestWrapperOptions('check can handle async function');
-        opts.testCases.add('C1234');
-        let tw: TestWrapper = new TestWrapper(opts);
+        let opts: ITestWrapperOptions = {testCases: ['C1234']} as ITestWrapperOptions;
+        let tw: TestWrapper = new TestWrapper('check can handle async function', opts);
         let foo: number = 0;
 
         await tw.check('C1234', async () => {
@@ -106,9 +101,8 @@ describe('TestWrapper instantiation', () => {
     });
 
     it('check can handle synchronous function', async () => {
-        let opts: TestWrapperOptions = new TestWrapperOptions('check can handle async function');
-        opts.testCases.add('C1234');
-        let tw: TestWrapper = new TestWrapper(opts);
+        let opts: ITestWrapperOptions = {testCases: ['C1234']} as ITestWrapperOptions;
+        let tw: TestWrapper = new TestWrapper('check can handle synchronous function', opts);
         let foo: number = 0;
 
         await tw.check('C1234', () => {
@@ -119,8 +113,7 @@ describe('TestWrapper instantiation', () => {
     });
 
     it('runAction can handle async function', async () => {
-        let opts: TestWrapperOptions = new TestWrapperOptions('runAction can handle async function');
-        let tw: TestWrapper = new TestWrapper(opts);
+        let tw: TestWrapper = new TestWrapper('runAction can handle async function');
         let foo: number = 0;
 
         let e: Error = await tw.runAction(async () => {
@@ -133,8 +126,7 @@ describe('TestWrapper instantiation', () => {
     });
 
     it('runAction can handle synchronous function', async () => {
-        let opts: TestWrapperOptions = new TestWrapperOptions('runAction can handle async function');
-        let tw: TestWrapper = new TestWrapper(opts);
+        let tw: TestWrapper = new TestWrapper('runAction can handle synchronous function');
         let foo: number = 0;
 
         let e: Error = await tw.runAction(() => {

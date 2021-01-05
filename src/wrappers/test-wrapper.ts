@@ -1,5 +1,5 @@
 import { TestLog } from "../logging/test-log";
-import { TestWrapperOptions } from "./test-wrapper-options";
+import { ITestWrapperOptions } from "./itest-wrapper-options";
 import { RandomGenerator } from "../helpers/random-generator";
 import { TestStatus } from "../integrations/test-cases/test-status";
 import { TestResult } from "../integrations/test-cases/test-result";
@@ -25,8 +25,8 @@ export class TestWrapper implements IDisposable {
     private startTime: number;
     private loggedCases: Set<string> = new Set<string>();
     
-    constructor(options: TestWrapperOptions) {
-        this.name = options.name || RandomGenerator.getGuid();
+    constructor(name: string, options?: ITestWrapperOptions) {
+        this.name = name;
         this.initialiseLogger(options);
         this.initialiseTestCases(options);
         this.initialiseDefects(options);
@@ -34,19 +34,19 @@ export class TestWrapper implements IDisposable {
         this.startTime = new Date().getTime();
     }
 
-    private initialiseLogger(options: TestWrapperOptions): void {
-        this.logger = options.logger || new TestLog(this.name);
+    private initialiseLogger(options?: ITestWrapperOptions): void {
+        this.logger = options?.logger || new TestLog(this.name);
     }
 
-    private initialiseTestCases(options: TestWrapperOptions) {
-        options.testCases.forEach(c => {
+    private initialiseTestCases(options?: ITestWrapperOptions) {
+        options?.testCases?.forEach(c => {
             this.testCases.add(c);
         });
         // TODO: implement plugin system for TestCaseHandler Plugins
     }
 
-    private initialiseDefects(options: TestWrapperOptions) {
-        options.defects.forEach(d => {
+    private initialiseDefects(options?: ITestWrapperOptions) {
+        options?.defects?.forEach(d => {
             this.defects.add(d);
         })
         // TODO: implement plugin system for DefectHandler Plugins

@@ -32,7 +32,7 @@ export * from './logging/ilogging-options';
 export * from './logging/logging-level';
 /** wrappers */
 export * from './wrappers/test-wrapper';
-export * from './wrappers/test-wrapper-options';
+export * from './wrappers/itest-wrapper-options';
 export * from './wrappers/should';
 export * from './wrappers/validation-error';
 export * from './wrappers/validator';
