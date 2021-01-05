@@ -26,7 +26,7 @@ export class TestLog implements IDisposable {
     private _level: LoggingLevel;
     async level(): Promise<LoggingLevel> {
         if (!this._level) {
-            this._level = LoggingLevel.parse(this._options.level || LoggingLevel.none.name);
+            this._level = LoggingLevel.parse(this._options?.level || LoggingLevel.info.name);
         }
         return this._level;
     }
@@ -34,7 +34,7 @@ export class TestLog implements IDisposable {
     private _plugins: ILoggingPlugin[];
     async plugins(): Promise<ILoggingPlugin[]> {
         if (!this._plugins) {
-            let names: string[] = this._options.pluginNames || [];
+            let names: string[] = this._options?.pluginNames || [];
             this._plugins = await PluginLoader.load<ILoggingPlugin>(...names);
         }
         return this._plugins;
@@ -134,7 +134,8 @@ export module TestLog {
 
     /**
      * a global static TestLog object that does NOT load any logging
-     * plugins and is set to a LoggingLevel of 'info'
+     * plugins and is set to a LoggingLevel of 'trace'. this is intended
+     * for use by systems internal to AFT and not by functional tests
      * @param message the message to be logged in the global static logger
      */
     export async function log(level: LoggingLevel, message: string): Promise<void> {
