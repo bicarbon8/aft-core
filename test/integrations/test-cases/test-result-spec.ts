@@ -2,22 +2,20 @@ import { TestResult, RandomGenerator, TestStatus } from "../../../src";
 
 describe('TestResult', () => {
     it('copies all MetaData when cloning', async () => {
-        let expected: TestResult = new TestResult();
-        expected.TestId = 'C' + RandomGenerator.getInt(100, 9999);
-        expected.TestStatus = TestStatus.Retest;
-        expected.ResultMessage = RandomGenerator.getString(100);
+        let expected: TestResult = new TestResult('C' + RandomGenerator.getInt(100, 9999), RandomGenerator.getString(100));
+        expected.status = TestStatus.Retest;
         for (var i=0; i<5; i++) {
-            expected.MetaData[RandomGenerator.getString(5)] = RandomGenerator.getString(10, true, true);
+            expected.metadata[RandomGenerator.getString(5)] = RandomGenerator.getString(10, true, true);
         }
 
         let actual: TestResult = expected.clone();
 
-        expect(actual.TestId).toEqual(expected.TestId);
-        expect(actual.ResultId).not.toEqual(expected.ResultId);
-        expect(actual.TestStatus).toEqual(expected.TestStatus);
-        expect(actual.ResultMessage).toEqual(expected.ResultMessage);
-        for(let key of Object.keys(expected.MetaData)) {
-            expect(actual.MetaData[key]).toEqual(expected.MetaData[key]);
+        expect(actual.testId).toEqual(expected.testId);
+        expect(actual.resultId).not.toEqual(expected.resultId);
+        expect(actual.status).toEqual(expected.status);
+        expect(actual.resultMessage).toEqual(expected.resultMessage);
+        for(let key of Object.keys(expected.metadata)) {
+            expect(actual.metadata[key]).toEqual(expected.metadata[key]);
         }
     });
 });

@@ -9,8 +9,10 @@ export * from './extensions/ellipsis-location';
 export * from './extensions/set-extensions';
 export * from './extensions/string-extensions';
 /** external */
-export * from './integrations/defects/issue';
-export * from './integrations/test-cases/test-result-metadata';
+export * from './integrations/defects/idefect';
+export * from './integrations/defects/defect-status';
+export * from './integrations/defects/plugins/idefect-handler-plugin';
+export * from './integrations/test-cases/itest-result-metadata';
 export * from './integrations/test-cases/test-result';
 export * from './integrations/test-cases/test-status';
 /** helpers */

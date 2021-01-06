@@ -1,32 +1,47 @@
 import { TestStatus } from "./test-status";
-import { Issue } from "../defects/issue";
+import { IDefect } from "../defects/idefect";
 import { RandomGenerator } from "../../helpers/random-generator";
 import { IClonable } from "../../helpers/icloneable";
+import { ITestResult } from "./itest-result";
+import { ITestResultMetaData } from "./itest-result-metadata";
 
-export class TestResult implements IClonable {
-    TestId: string;
-    ResultMessage: string;
-    TestStatus: TestStatus = TestStatus.Untested;
-    ResultId: string = RandomGenerator.getGuid();
-    Created: Date = new Date();
-    Issues: Array<Issue> = new Array<Issue>();
-    MetaData: object = {};
+export class TestResult implements ITestResult, IClonable {
+    testId: string;
+    resultMessage: string;
+    status: TestStatus;
+    resultId: string;
+    created: Date;
+    defects: IDefect[];
+    metadata: ITestResultMetaData;
+
+    constructor(testId: string, resultMessage: string) {
+        this.testId = testId;
+        this.resultMessage = resultMessage;
+        this.status = TestStatus.Untested;
+        this.resultId = RandomGenerator.getGuid();
+        this.created = new Date();
+        this.defects = [];
+        this.metadata = {} as ITestResultMetaData;
+    }
 
     clone(): TestResult {
-        let c: TestResult = new TestResult();
-        c.TestId = this.TestId;
-        c.ResultMessage = this.ResultMessage;
-        c.TestStatus = this.TestStatus;
-        this.Issues.forEach(issue => {
-            let i: Issue = issue.clone();
-            c.Issues.push(i);
+        let c: TestResult = new TestResult(this.testId, this.resultMessage);
+        c.testId = this.testId;
+        c.resultMessage = this.resultMessage;
+        c.status = this.status;
+        this.defects.forEach(defect => {
+            let i: any = defect;
+            if (i["clone"]) {
+                i = (i as IClonable).clone();
+            }
+            c.defects.push(i);
         });
-        for(let key of Object.keys(this.MetaData)) {
-            let m = this.MetaData[key];
+        for(let key of Object.keys(this.metadata)) {
+            let m = this.metadata[key];
             if (m["clone"]) {
                 m = (m as IClonable).clone();
             }
-            c.MetaData[key] = m;
+            c.metadata[key] = m;
         };
 
         return c;

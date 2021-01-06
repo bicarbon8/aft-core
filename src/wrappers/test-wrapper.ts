@@ -4,7 +4,7 @@ import { RandomGenerator } from "../helpers/random-generator";
 import { TestStatus } from "../integrations/test-cases/test-status";
 import { TestResult } from "../integrations/test-cases/test-result";
 import { IDisposable } from "../helpers/idisposable";
-import { TestResultMetaData } from "../integrations/test-cases/test-result-metadata";
+import { ITestResultMetaData } from "../integrations/test-cases/itest-result-metadata";
 import '../extensions/string-extensions';
 import '../extensions/set-extensions';
 import { TestException } from "../integrations/test-cases/test-exception";
@@ -48,7 +48,7 @@ export class TestWrapper implements IDisposable {
     private initialiseDefects(options?: ITestWrapperOptions) {
         options?.defects?.forEach(d => {
             this.defects.add(d);
-        })
+        });
         // TODO: implement plugin system for DefectHandler Plugins
     }
 
@@ -143,18 +143,16 @@ export class TestWrapper implements IDisposable {
             status = TestStatus.Failed;
             message = error.message;
         }
-        await this.logRemainingCases(status, message);
+        this.logRemainingCases(status, message);
 
         await this.disposeLogger(error);
     }
 
     private generateTestResult(testId: string, status: TestStatus, logMessage: string): TestResult {
-        let result: TestResult = new TestResult();
-        result.TestId = testId;
-        result.TestStatus = status;
-        result.ResultMessage = logMessage.ellide(100);
-        result.MetaData[TestResultMetaData[TestResultMetaData.DurationMs]] = Convert.toElapsedMs(this.startTime).toString();
-        result.MetaData[TestResultMetaData[TestResultMetaData.TestStatusStr]] = TestStatus[status];
+        let result: TestResult = new TestResult(testId, logMessage.ellide(100));
+        result.status = status;
+        result.metadata.durationMs = Convert.toElapsedMs(this.startTime);
+        result.metadata.statusStr = TestStatus[status];
         if (this.errors.length > 0) {
             let exceptionsArray: string[] = [];
             for (var i=0; i<this.errors.length; i++) {
@@ -164,11 +162,11 @@ export class TestWrapper implements IDisposable {
                 }
             }
             let exceptionsStr: string = exceptionsArray.join('\n');
-            result.MetaData[TestResultMetaData[TestResultMetaData.ExceptionsStr]] = exceptionsStr;
+            result.metadata.logs = exceptionsStr;
             let lastError: Error = this.errors[this.errors.length - 1];
             if (lastError) {
                 let lastEx: TestException = TestException.generateFull(lastError);
-                result.MetaData[TestResultMetaData[TestResultMetaData.LastException]] = lastEx;
+                result.metadata.lastError = lastEx;
             }
         }
 

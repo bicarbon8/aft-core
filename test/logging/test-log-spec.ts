@@ -49,9 +49,8 @@ describe('TestLog', () => {
         let opts: ILoggingOptions = {pluginNames: ['./dist/test/logging/fake-logger']} as ILoggingOptions;
         let logger: TestLog = new TestLog('will send cloned TestResult to any registered ILoggingPlugin implementations', opts);
 
-        let result: TestResult = new TestResult();
-        result.TestId = 'C' + RandomGenerator.getInt(1000, 999999);
-
+        let result: TestResult = new TestResult('C' + RandomGenerator.getInt(1000, 999999), RandomGenerator.getString(100));
+        
         // wait 0.1 second
         await new Promise((resolve, reject) => {
             setTimeout(resolve, 10);
@@ -61,8 +60,8 @@ describe('TestLog', () => {
 
         expect(LoggingPluginStore.logs.length).toEqual(0);
         expect(LoggingPluginStore.results.length).toEqual(1);
-        expect(LoggingPluginStore.results[0].TestId).toEqual(result.TestId);
-        expect(LoggingPluginStore.results[0].Created).not.toEqual(result.Created); // because the TestResult is a clone created at a different time
+        expect(LoggingPluginStore.results[0].testId).toEqual(result.testId);
+        expect(LoggingPluginStore.results[0].created).not.toEqual(result.created); // because the TestResult is a clone created at a different time
     });
 
     it('calls ILoggingPlugin.finalise on TestLog.dispose', async () => {
