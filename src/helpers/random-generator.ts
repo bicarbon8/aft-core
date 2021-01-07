@@ -51,4 +51,18 @@ export module RandomGenerator {
     export function getGuid(): string {
         return uuid.v4();
     }
+
+    export function getEnum<T>(anEnum: T): T[keyof T] {
+        let enumValues: T[keyof T][] = Object.keys(anEnum)
+          .map(n => Number.parseInt(n))
+          .filter(n => !Number.isNaN(n)) as any as T[keyof T][];
+        let randomIndex: number = Math.floor(Math.random() * enumValues.length);
+        let randomEnumValue: T[keyof T] = enumValues[randomIndex];
+        return randomEnumValue;
+    }
+
+    export function getBoolean(): boolean {
+        let i: number = getInt(0, 100);
+        return i < 50;
+    }
 }

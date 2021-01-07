@@ -11,6 +11,12 @@ import { TestException } from "../integrations/test-cases/test-exception";
 import { Convert } from "../helpers/convert";
 import { Validator } from "./validator";
 import { Action } from "../helpers/action";
+import { IProcessingResult } from "../helpers/iprocessing-result";
+import { TestCaseManager } from "../integrations/test-cases/test-case-manager";
+import { ITestCase } from "../integrations/test-cases/itest-case";
+import { IDefect } from "../integrations/defects/idefect";
+import { DefectManager } from "../integrations/defects/defect-manager";
+import { DefectStatus } from "../integrations/defects/defect-status";
 
 /**
  * provides helper methods and properties for use when integration or functional testing
@@ -22,16 +28,19 @@ export class TestWrapper implements IDisposable {
     defects: Set<string> = new Set<string>();
     errors: Error[] = [];
     
-    private startTime: number;
-    private loggedCases: Set<string> = new Set<string>();
+    private _startTime: number;
+    private _loggedCases: Set<string> = new Set<string>();
+    private _testCaseManager: TestCaseManager = null;
+    private _defectManager: DefectManager = null;
     
     constructor(name: string, options?: ITestWrapperOptions) {
         this.name = name;
+
         this.initialiseLogger(options);
         this.initialiseTestCases(options);
         this.initialiseDefects(options);
 
-        this.startTime = new Date().getTime();
+        this._startTime = new Date().getTime();
     }
 
     private initialiseLogger(options?: ITestWrapperOptions): void {
@@ -39,17 +48,17 @@ export class TestWrapper implements IDisposable {
     }
 
     private initialiseTestCases(options?: ITestWrapperOptions) {
+        this._testCaseManager = options?.testCaseManager || TestCaseManager.instance();
         options?.testCases?.forEach(c => {
             this.testCases.add(c);
         });
-        // TODO: implement plugin system for TestCaseHandler Plugins
     }
 
     private initialiseDefects(options?: ITestWrapperOptions) {
+        this._defectManager = options?.defectManager || DefectManager.instance();
         options?.defects?.forEach(d => {
             this.defects.add(d);
         });
-        // TODO: implement plugin system for DefectHandler Plugins
     }
 
     /**
@@ -60,7 +69,7 @@ export class TestWrapper implements IDisposable {
      * @param message the message to be sent in the result
      */
     async addTestResult(testId: string, status: TestStatus, message?: string): Promise<void> {
-        if (!this.loggedCases.has(testId)) {
+        if (!this._loggedCases.has(testId)) {
             if (!message) {
                 message = '';
             }
@@ -73,29 +82,29 @@ export class TestWrapper implements IDisposable {
                     case TestStatus.Retest:
                     case TestStatus.Skipped:
                     case TestStatus.Untested:
-                        this.logger.warn(fullMessage);
+                        await this.logger.warn(fullMessage);
                         break;
                     case TestStatus.Failed:
-                        this.logger.error(fullMessage);
+                        await this.logger.error(fullMessage);
                         break;
                     case TestStatus.Passed:
                     default:
-                        this.logger.pass(fullMessage);
+                        await this.logger.pass(fullMessage);
                         break;
                 }
                 
                 try {
                     let result: TestResult = this.generateTestResult(testId, status, fullMessage);
                     await this.logger.logResult(result);
-                    this.loggedCases.add(testId);
+                    this._loggedCases.add(testId);
                 } catch (e) {
-                    this.logger.warn("unable to 'addTestResult' for test '" + testId + "' due to: " + e);
+                    await this.logger.warn("unable to 'addTestResult' for test '" + testId + "' due to: " + e);
                 }
             } else {
-                this.logger.warn("test '" + testId + "' is not a valid test ID; please use one of [" + this.testCases.join(',') + "] instead; no result will be submitted.");
+                await this.logger.warn("test '" + testId + "' is not a valid test ID; please use one of [" + this.testCases.join(',') + "] instead; no result will be submitted.");
             }
         } else {
-            this.logger.warn("you are attempting to add a second result for test '" + testId + "' which already has a result; no result will be submitted.");
+            await this.logger.warn("you are attempting to add a second result for test '" + testId + "' which already has a result; no result will be submitted.");
         }
     }
 
@@ -108,13 +117,19 @@ export class TestWrapper implements IDisposable {
      * @param action the test action being performed
      */
     async check(testId: string, action: Action<void>): Promise<void> {
-        let err: Error = await this.runAction(action);
-        
-        if (err) {
-            this.errors.push(err);
-            await this.addTestResult(testId, TestStatus.Failed, err.message);
+        // check if passed in 'testId' should be run
+        let shouldRun: IProcessingResult = await this.shouldRunTestCase(testId);
+        if (shouldRun.success) {
+            let err: Error = await this.runAction(action);
+            
+            if (err) {
+                this.errors.push(err);
+                await this.addTestResult(testId, TestStatus.Failed, err.message);
+            } else {
+                await this.addTestResult(testId, TestStatus.Passed);
+            }
         } else {
-            await this.addTestResult(testId, TestStatus.Passed);
+            await this.addTestResult(testId, TestStatus.Skipped, shouldRun.message);
         }
     }
 
@@ -136,6 +151,42 @@ export class TestWrapper implements IDisposable {
         return err;
     }
 
+    /**
+     * function will lookup the passed in 'testId' in any Test Case 
+     * Handler Plugins specified and determine if the test should be
+     * executed or skipped. If no Handler Plugins exist, the result 
+     * will indicate that the test SHOULD be run otherwise the logic
+     * is left to the plugin to determine
+     * @param testId the test case ID passed to the 'check' function
+     */
+    private async shouldRunTestCase(testId: string): Promise<IProcessingResult> {
+        if (!this.testCases.has(testId)) {
+            this.testCases.add(testId);
+        }
+        try {
+            let tcShouldRun: IProcessingResult = await this._testCaseManager.shouldRun(testId);
+            if (tcShouldRun.success) {
+                let defects: IDefect[] = await this._defectManager.findDefects(testId) || [];
+                for (var i=0; i<defects.length; i++) {
+                    let d: IDefect = defects[i];
+                    if (d.status == DefectStatus.open) {
+                        if (!this.defects.has(d.id)) {
+                            this.defects.add(d.id);
+                        }
+                        return {
+                            obj: d, // the open defect
+                            success: false, // should not run test
+                            message: `defect: '${d.id}' referencing testId: '${testId}' is open so test should not be run`
+                        };
+                    }
+                }
+            }
+            return tcShouldRun;
+        } catch (e) {
+            return {success: false, message: e} as IProcessingResult;
+        }
+    }
+
     async dispose(error?: Error) {
         let status: TestStatus = TestStatus.Passed;
         let message: string = '';
@@ -151,7 +202,7 @@ export class TestWrapper implements IDisposable {
     private generateTestResult(testId: string, status: TestStatus, logMessage: string): TestResult {
         let result: TestResult = new TestResult(testId, logMessage.ellide(100));
         result.status = status;
-        result.metadata.durationMs = Convert.toElapsedMs(this.startTime);
+        result.metadata.durationMs = Convert.toElapsedMs(this._startTime);
         result.metadata.statusStr = TestStatus[status];
         if (this.errors.length > 0) {
             let exceptionsArray: string[] = [];
@@ -175,7 +226,7 @@ export class TestWrapper implements IDisposable {
 
     private logRemainingCases(status: TestStatus, message: string) {
         for (let c of this.testCases) {
-            if (!this.loggedCases.has(c)) {
+            if (!this._loggedCases.has(c)) {
                 this.addTestResult(c, status, message);
             }
         }

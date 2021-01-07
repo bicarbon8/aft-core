@@ -4,4 +4,5 @@ export interface IDefectHandlerPlugin {
     name: string;
     enabled(): Promise<boolean>;
     getDefect(defectId: string): Promise<IDefect>;
+    findDefects(searchTerm: string): Promise<IDefect[]>;
 }

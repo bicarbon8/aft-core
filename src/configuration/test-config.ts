@@ -51,6 +51,15 @@ export module TestConfig {
         return _aftConfig;
     }
 
+    /**
+     * function will lookup the value for a specified set of keys within the aftconfig.json
+     * by recursing down until the last key is used. for example to get the value of "baz" from
+     * {"foo": {"bar": {"baz": 123}}} you would specify a key of 'foo.bar.baz' which would 
+     * return 123. alternatively, to get the value of "bar" you would specify a key of
+     * 'foo.bar' which would return {"baz": 123}
+     * @param keys the keys to be used in looking up values separated by the . character
+     * @param defaultVal if no value found for the specified keys then this will be returned instead; default null
+     */
     export async function get<T>(keys: string, defaultVal?: T): Promise<T> {
         let conf: object = await aftConfig();
         let val: any = getFrom(conf, keys)
@@ -58,6 +67,15 @@ export module TestConfig {
         return val || defaultVal as T;
     }
 
+    /**
+     * function will lookup the value for a specified set of keys within the passed in object
+     * by recursing down until the last key is used. for example to get the value of "baz" from
+     * {"foo": {"bar": {"baz": 123}}} you would specify a key of 'foo.bar.baz' which would 
+     * return 123. alternatively, to get the value of "bar" you would specify a key of
+     * 'foo.bar' which would return {"baz": 123}
+     * @param obj the object to search for values within
+     * @param keys the keys to be used in looking up values separated by the . character
+     */
     export function getFrom(obj: any, keys: string): any {
         let result: any = null;
         let keysArray: string[] = keys.split('.');
