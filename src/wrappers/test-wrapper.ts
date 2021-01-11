@@ -1,31 +1,30 @@
 import { TestLog } from "../logging/test-log";
+import { Func } from "../helpers/func";
 import { ITestWrapperOptions } from "./itest-wrapper-options";
-import { RandomGenerator } from "../helpers/random-generator";
 import { TestStatus } from "../integrations/test-cases/test-status";
 import { TestResult } from "../integrations/test-cases/test-result";
-import { IDisposable } from "../helpers/idisposable";
-import { ITestResultMetaData } from "../integrations/test-cases/itest-result-metadata";
 import '../extensions/string-extensions';
 import '../extensions/set-extensions';
 import { TestException } from "../integrations/test-cases/test-exception";
 import { Convert } from "../helpers/convert";
-import { Validator } from "./validator";
 import { Action } from "../helpers/action";
 import { IProcessingResult } from "../helpers/iprocessing-result";
 import { TestCaseManager } from "../integrations/test-cases/test-case-manager";
-import { ITestCase } from "../integrations/test-cases/itest-case";
 import { IDefect } from "../integrations/defects/idefect";
 import { DefectManager } from "../integrations/defects/defect-manager";
 import { DefectStatus } from "../integrations/defects/defect-status";
+import { ITestResult } from "../integrations/test-cases/itest-result";
+import { ISafeStringOption } from "../helpers/isafe-string-option";
 
 /**
  * provides helper methods and properties for use when integration or functional testing
  */
-export class TestWrapper implements IDisposable {
-    name: string;
+export class TestWrapper {
+    expectation: Func<void, any>;
+    reason: string;
     logger: TestLog;
-    testCases: Set<string> = new Set<string>();
-    defects: Set<string> = new Set<string>();
+    testCases: string[] = [];
+    defects: string[] = [];
     errors: Error[] = [];
     
     private _startTime: number;
@@ -33,32 +32,57 @@ export class TestWrapper implements IDisposable {
     private _testCaseManager: TestCaseManager = null;
     private _defectManager: DefectManager = null;
     
-    constructor(name: string, options?: ITestWrapperOptions) {
-        this.name = name;
+    async init(expectation: Func<void, any>, options?: ITestWrapperOptions): Promise<TestWrapper> {
+        this.expectation = expectation;
+        this.reason = this.expectation.toString();
 
         this.initialiseLogger(options);
         this.initialiseTestCases(options);
         this.initialiseDefects(options);
 
         this._startTime = new Date().getTime();
+
+        if (options?.because) {
+            await this.because(options?.because);
+        }
+
+        return this;
     }
 
     private initialiseLogger(options?: ITestWrapperOptions): void {
-        this.logger = options?.logger || new TestLog(this.name);
+        this.logger = options?.logger || new TestLog(this.reason);
     }
 
     private initialiseTestCases(options?: ITestWrapperOptions) {
         this._testCaseManager = options?.testCaseManager || TestCaseManager.instance();
         options?.testCases?.forEach(c => {
-            this.testCases.add(c);
+            this.testCases.push(c);
         });
     }
 
     private initialiseDefects(options?: ITestWrapperOptions) {
         this._defectManager = options?.defectManager || DefectManager.instance();
         options?.defects?.forEach(d => {
-            this.defects.add(d);
+            this.defects.push(d);
         });
+    }
+
+    /**
+     * function will throw a ValidationError if the 
+     * specified result is false, otherwise no action
+     * is taken
+     * @param reason reason why result should be true
+     */
+    async because(reason?: string): Promise<boolean> {
+        this.reason += ` because ${reason}`;
+        this.logger.initName(this.reason);
+        
+        let result: IProcessingResult = await this.run();
+        if (!result.success) {
+            throw new Error(result.message);
+        }
+
+        return result.success;
     }
 
     /**
@@ -68,15 +92,16 @@ export class TestWrapper implements IDisposable {
      * @param status the ExternalTestStatus for the result
      * @param message the message to be sent in the result
      */
-    async addTestResult(testId: string, status: TestStatus, message?: string): Promise<void> {
-        if (!this._loggedCases.has(testId)) {
-            if (!message) {
-                message = '';
-            }
+    private async logResult(status: TestStatus, message?: string): Promise<void> {
+        if (!message) {
+            message = '';
+        }
+        let fullMessage: string;
+        if (this.testCases.length > 0) {
+            for (var i=0; i<this.testCases.length; i++) {
+                let testId: string = this.testCases[i];
+                fullMessage = TestStatus[status] + ' - ' + testId + ': ' + message;
 
-            let fullMessage: string = TestStatus[status] + ' - ' + testId + ': ' + message;
-
-            if (this.testCases.size == 0 || this.testCases.has(testId)) {
                 switch (status) {
                     case TestStatus.Blocked:
                     case TestStatus.Retest:
@@ -85,51 +110,29 @@ export class TestWrapper implements IDisposable {
                         await this.logger.warn(fullMessage);
                         break;
                     case TestStatus.Failed:
-                        await this.logger.error(fullMessage);
+                        await this.logger.fail(fullMessage);
                         break;
                     case TestStatus.Passed:
                     default:
                         await this.logger.pass(fullMessage);
                         break;
                 }
-                
-                try {
-                    let result: TestResult = this.generateTestResult(testId, status, fullMessage);
-                    await this.logger.logResult(result);
-                    this._loggedCases.add(testId);
-                } catch (e) {
-                    await this.logger.warn("unable to 'addTestResult' for test '" + testId + "' due to: " + e);
-                }
-            } else {
-                await this.logger.warn("test '" + testId + "' is not a valid test ID; please use one of [" + this.testCases.join(',') + "] instead; no result will be submitted.");
             }
         } else {
-            await this.logger.warn("you are attempting to add a second result for test '" + testId + "' which already has a result; no result will be submitted.");
+            fullMessage = TestStatus[status] + ': ' + message;
         }
-    }
 
-    /**
-     * DANGER!!: this method does not catch 'jasmine.expect' failures unless
-     * you've wrapped the expect call using 'should(expect(actual).toBe(expected)).because('reason');'
-     * this function runs the passed in test action and then calls 'addTestResult'
-     * based on the results of the call
-     * @param testId the test ID being validated
-     * @param action the test action being performed
-     */
-    async check(testId: string, action: Action<void>): Promise<void> {
-        // check if passed in 'testId' should be run
-        let shouldRun: IProcessingResult = await this.shouldRunTestCase(testId);
-        if (shouldRun.success) {
-            let err: Error = await this.runAction(action);
-            
-            if (err) {
-                this.errors.push(err);
-                await this.addTestResult(testId, TestStatus.Failed, err.message);
-            } else {
-                await this.addTestResult(testId, TestStatus.Passed);
+        let results: ITestResult[] = this.generateTestResults(status, fullMessage);
+        for (var i=0; i<results.length; i++) {
+            let result: ITestResult = results[i];
+            try {
+                await this.logger.logResult(result);
+                if (result.testId) {
+                    this._loggedCases.add(result.testId);
+                }
+            } catch (e) {
+                await this.logger.warn(`unable to 'addTestResult' for test '${result.testId || result.resultId}' due to: ${e}`);
             }
-        } else {
-            await this.addTestResult(testId, TestStatus.Skipped, shouldRun.message);
         }
     }
 
@@ -139,68 +142,96 @@ export class TestWrapper implements IDisposable {
      * instead of letting the Error out
      * @param action the action to run
      */
-    async runAction(action: Action<void>): Promise<Error> {
-        let err: Error = null;
-        if (action) {
-            try {
-                await Promise.resolve(action());
-            } catch (e) {
-                err = e;
+    private async run(): Promise<IProcessingResult> {
+        let status: TestStatus = TestStatus.Untested;
+        let message: string = this.reason;
+        if (this.expectation) {
+            let shouldRun: IProcessingResult = await this.shouldRun();
+            if (shouldRun.success) {
+                try {
+                    let result: boolean = await Promise.resolve<boolean>(this.expectation());
+                    if (result != false) {
+                        status = TestStatus.Passed;
+                    } else {
+                        status = TestStatus.Failed;
+                    }
+                } catch(e) {
+                    status = TestStatus.Retest;
+                    message = e;
+                }
+            } else {
+                status = TestStatus.Skipped;
+                message = shouldRun.message;
             }
+        } else {
+            message = 'no test expectation supplied so nothing could be tested';
         }
-        return err;
+        
+        this.logResult(status, message);
+        return {obj: status, message: message, success: status == TestStatus.Passed};
     }
 
-    /**
-     * function will lookup the passed in 'testId' in any Test Case 
-     * Handler Plugins specified and determine if the test should be
-     * executed or skipped. If no Handler Plugins exist, the result 
-     * will indicate that the test SHOULD be run otherwise the logic
-     * is left to the plugin to determine
-     * @param testId the test case ID passed to the 'check' function
-     */
-    private async shouldRunTestCase(testId: string): Promise<IProcessingResult> {
-        if (!this.testCases.has(testId)) {
-            this.testCases.add(testId);
+    private async shouldRun(): Promise<IProcessingResult> {
+        let tcShouldRun: IProcessingResult = await this.shouldRun_tests();
+        if (!tcShouldRun.success) {
+            return tcShouldRun;
         }
-        try {
-            let tcShouldRun: IProcessingResult = await this._testCaseManager.shouldRun(testId);
-            if (tcShouldRun.success) {
+        let dShouldRun: IProcessingResult = await this.shouldRun_defects();
+        if (!dShouldRun) {
+            return dShouldRun;
+        }
+        return {success: true} as IProcessingResult;
+    }
+
+    private async shouldRun_tests(): Promise<IProcessingResult> {
+        let shouldRun: boolean = false;
+        let reasons: string[] = [];
+        if (this.testCases.length > 0) {
+            for (var i=0; i<this.testCases.length; i++) {
+                let testId: string = this.testCases[i];
+                let tcShouldRun: IProcessingResult = await this._testCaseManager.shouldRun(testId);
+                shouldRun = shouldRun || tcShouldRun.success;
+                reasons.push(tcShouldRun.message);
+            }
+            return {success: shouldRun, message: reasons.join(', ')} as IProcessingResult;
+        }
+        return {success: true} as IProcessingResult;
+    }
+
+    private async shouldRun_defects(): Promise<IProcessingResult> {
+        if (this.testCases.length > 0) {
+            for (var i=0; i<this.testCases.length; i++) {
+                let testId: string = this.testCases[i];
                 let defects: IDefect[] = await this._defectManager.findDefects(testId) || [];
-                for (var i=0; i<defects.length; i++) {
-                    let d: IDefect = defects[i];
+                for (var j=0; j<defects.length; j++) {
+                    let d: IDefect = defects[j];
                     if (d.status == DefectStatus.open) {
-                        if (!this.defects.has(d.id)) {
-                            this.defects.add(d.id);
-                        }
-                        return {
-                            obj: d, // the open defect
-                            success: false, // should not run test
-                            message: `defect: '${d.id}' referencing testId: '${testId}' is open so test should not be run`
-                        };
+                        return {success: false, message: `TestId: '${testId}' has open defect '${d.id}' so it should not be run.`} as IProcessingResult;
                     }
                 }
             }
-            return tcShouldRun;
-        } catch (e) {
-            return {success: false, message: e} as IProcessingResult;
         }
+        return {success: true} as IProcessingResult;
     }
 
-    async dispose(error?: Error) {
-        let status: TestStatus = TestStatus.Passed;
-        let message: string = '';
-        if (error) {
-            status = TestStatus.Failed;
-            message = error.message;
+    private generateTestResults(status: TestStatus, logMessage: string): ITestResult[] {
+        let results: ITestResult[] = [];
+        if (this.testCases.length > 0) {
+            for (var i=0; i<this.testCases.length; i++) {
+                let testId: string = this.testCases[i];
+                let result: ITestResult = this.generateTestResult(status, logMessage, testId);
+                results.push(result);
+            }
+        } else {
+            let result: ITestResult = this.generateTestResult(status, logMessage);
+            results.push(result);
         }
-        this.logRemainingCases(status, message);
-
-        await this.disposeLogger(error);
+        return results;
     }
 
-    private generateTestResult(testId: string, status: TestStatus, logMessage: string): TestResult {
-        let result: TestResult = new TestResult(testId, logMessage.ellide(100));
+    private generateTestResult(status: TestStatus, logMessage: string, testId?: string): ITestResult {
+        let result: TestResult = new TestResult(logMessage.ellide(100));
+        result.testId = testId;
         result.status = status;
         result.metadata.durationMs = Convert.toElapsedMs(this._startTime);
         result.metadata.statusStr = TestStatus[status];
@@ -220,19 +251,16 @@ export class TestWrapper implements IDisposable {
                 result.metadata.lastError = lastEx;
             }
         }
-
         return result;
-    }
-
-    private logRemainingCases(status: TestStatus, message: string) {
-        for (let c of this.testCases) {
-            if (!this._loggedCases.has(c)) {
-                this.addTestResult(c, status, message);
-            }
-        }
     }
 
     private async disposeLogger(error?: Error) {
         await this.logger.dispose(error);
+    }
+}
+
+export module AFT {
+    export async function tw(expectation: Func<void, any>, options?: ITestWrapperOptions): Promise<TestWrapper> {
+        return await new TestWrapper().init(expectation, options);
     }
 }

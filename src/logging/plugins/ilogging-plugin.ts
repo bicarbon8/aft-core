@@ -1,5 +1,5 @@
 import { LoggingLevel } from "../logging-level";
-import { TestResult } from "../../integrations/test-cases/test-result";
+import { ITestResult } from "../../integrations/test-cases/itest-result";
 
 export interface ILoggingPlugin {
     name: string;
@@ -7,6 +7,6 @@ export interface ILoggingPlugin {
     level(): Promise<LoggingLevel>;
     enabled(): Promise<boolean>;
     log(level: LoggingLevel, message: string): Promise<void>;
-    logResult(result: TestResult): Promise<void>;
+    logResult(result: ITestResult): Promise<void>;
     finalise(): Promise<void>;
 }

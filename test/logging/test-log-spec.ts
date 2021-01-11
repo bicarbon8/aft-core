@@ -49,7 +49,8 @@ describe('TestLog', () => {
         let opts: ILoggingOptions = {pluginNames: ['./dist/test/logging/fake-logger']} as ILoggingOptions;
         let logger: TestLog = new TestLog('will send cloned TestResult to any registered ILoggingPlugin implementations', opts);
 
-        let result: TestResult = new TestResult('C' + RandomGenerator.getInt(1000, 999999), RandomGenerator.getString(100));
+        let result: TestResult = new TestResult(RandomGenerator.getString(100));
+        result.testId = 'C' + RandomGenerator.getInt(1000, 999999);
         
         // wait 0.1 second
         await new Promise((resolve, reject) => {

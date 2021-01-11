@@ -5,14 +5,25 @@ import { LoggingLevel } from "./logging-level";
 import { PluginLoader } from "../construction/plugin-loader";
 import { ILoggingOptions } from "./ilogging-options";
 import { TestConfig } from "../configuration/test-config";
+import { ITestResult } from "../integrations/test-cases/itest-result";
+import { IClonable } from "../helpers/icloneable";
+import { Convert } from "../helpers/convert";
+import { ISafeStringOption } from "../helpers/isafe-string-option";
 
 export class TestLog implements IDisposable {
     name: string;
     stepCount: number = 0;
     
     constructor(name: string, options?: ILoggingOptions) {
-        this.name = name;
         this._options = options;
+        this.initName(name);
+    }
+
+    initName(name: string): void {
+        let opts: ISafeStringOption[] = ISafeStringOption.defaults;
+        opts.push({exclude: 'function', replaceWith: ''});
+        opts.push({exclude: 'return', replaceWith: ''});
+        this.name = Convert.toSafeString(name, opts);
     }
 
     private _options: ILoggingOptions;
@@ -92,14 +103,17 @@ export class TestLog implements IDisposable {
         }
     }
 
-    async logResult(result: TestResult): Promise<void> {
+    async logResult(result: ITestResult): Promise<void> {
         let plugins: ILoggingPlugin[] = await this.plugins();
         for (var i=0; i<plugins.length; i++) {
             let p: ILoggingPlugin = plugins[i];
             try {
                 let enabled: boolean = await p.enabled();
                 if (enabled) {
-                    let r: TestResult = result.clone();
+                    let r: ITestResult;
+                    if (result["clone"]) {
+                        r = (result as unknown as IClonable).clone() as ITestResult;
+                    }
                     await p.logResult(r);
                 }
             } catch (e) {

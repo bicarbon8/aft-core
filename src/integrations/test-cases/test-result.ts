@@ -14,8 +14,7 @@ export class TestResult implements ITestResult, IClonable {
     defects: IDefect[];
     metadata: ITestResultMetaData;
 
-    constructor(testId: string, resultMessage: string) {
-        this.testId = testId;
+    constructor(resultMessage?: string) {
         this.resultMessage = resultMessage;
         this.status = TestStatus.Untested;
         this.resultId = RandomGenerator.getGuid();
@@ -25,7 +24,7 @@ export class TestResult implements ITestResult, IClonable {
     }
 
     clone(): TestResult {
-        let c: TestResult = new TestResult(this.testId, this.resultMessage);
+        let c: TestResult = new TestResult();
         c.testId = this.testId;
         c.resultMessage = this.resultMessage;
         c.status = this.status;

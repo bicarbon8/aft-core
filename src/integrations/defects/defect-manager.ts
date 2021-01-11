@@ -32,10 +32,10 @@ export class DefectManager {
             if (handler && await handler.enabled()) {
                 return await handler.findDefects(searchTerm);
             }
-            return null;
+            return [];
         }).catch(async (err) => {
             await this._logger.warn(err);
-            return null;
+            return [];
         });
     }
 

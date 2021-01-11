@@ -2,7 +2,8 @@ import { TestResult, RandomGenerator, TestStatus } from "../../../src";
 
 describe('TestResult', () => {
     it('copies all MetaData when cloning', async () => {
-        let expected: TestResult = new TestResult('C' + RandomGenerator.getInt(100, 9999), RandomGenerator.getString(100));
+        let expected: TestResult = new TestResult(RandomGenerator.getString(100));
+        expected.testId = 'C' + RandomGenerator.getInt(100, 9999);
         expected.status = TestStatus.Retest;
         for (var i=0; i<5; i++) {
             expected.metadata[RandomGenerator.getString(5)] = RandomGenerator.getString(10, true, true);

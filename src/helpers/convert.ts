@@ -1,3 +1,5 @@
+import { ISafeStringOption } from "./isafe-string-option";
+
 export module Convert {
     /**
      * function will Base64 encode the passed in string
@@ -23,5 +25,20 @@ export module Convert {
      */
     export function toElapsedMs(startTime: number): number {
         return new Date().getTime() - startTime;
+    }
+
+    /**
+     * function will replace any occurrences of the passed in 'excludes' strings with
+     * the value of the passed in 'replaceWith' string
+     * @param input the original string to process
+     * @param options an array of {exclude: string | RegExp, replaceWith: string} objects to 
+     * use in processing the input string
+     */
+    export function toSafeString(input: string, options: ISafeStringOption[] = ISafeStringOption.defaults): string {
+        for (var i=0; i<options.length; i++) {
+            let o: ISafeStringOption = options[i];
+            input = input.replace(o.exclude, o.replaceWith);
+        }
+        return input;
     }
 }
