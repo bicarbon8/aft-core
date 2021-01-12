@@ -4,7 +4,7 @@
  * return a simple boolean
  */
 export interface IProcessingResult {
-    obj: any;
-    success: boolean;
-    message: string
+    obj?: any;
+    success?: boolean;
+    message?: string
 }

@@ -6,7 +6,7 @@ import { PluginLoader } from "../construction/plugin-loader";
 import { ILoggingOptions } from "./ilogging-options";
 import { TestConfig } from "../configuration/test-config";
 import { ITestResult } from "../integrations/test-cases/itest-result";
-import { IClonable } from "../helpers/icloneable";
+import { ICloneable } from "../helpers/icloneable";
 import { Convert } from "../helpers/convert";
 import { ISafeStringOption } from "../helpers/isafe-string-option";
 
@@ -113,7 +113,7 @@ export class TestLog implements IDisposable {
                     if (enabled) {
                         let r: ITestResult;
                         if (result["clone"]) {
-                            r = (result as unknown as IClonable).clone() as ITestResult;
+                            r = (result as unknown as ICloneable).clone() as ITestResult;
                         }
                         await p.logResult(r);
                     }

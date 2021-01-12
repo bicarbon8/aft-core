@@ -36,7 +36,7 @@ export class MockTestCaseHandlerPlugin implements ITestCaseHandlerPlugin {
                 return {obj: c1, message: 'do not run C1234', success: false};
             case 'C2345':
                 let c2: ITestCase = await this.getTestCase(testId);
-                return {obj: c2, success: true} as IProcessingResult;
+                return {obj: c2, success: true};
             default:
                 let c3: ITestCase = await this.getTestCase(testId);
                 return {obj: c3, message: RandomGenerator.getString(22), success: RandomGenerator.getBoolean()};

@@ -1,6 +1,8 @@
-import { Validator } from "./validator";
 import { Func } from "../helpers/func";
+import { ITestWrapperOptions } from "./itest-wrapper-options";
+import { TestWrapper } from "./test-wrapper";
 
-export function should(result: Func<void, boolean>): Validator {
-    return new Validator(result);
+export const should = async function(expectation: Func<void, any>, options?: ITestWrapperOptions): Promise<TestWrapper> {
+    let t: TestWrapper = new TestWrapper();
+    return await t.init(expectation, options);
 }

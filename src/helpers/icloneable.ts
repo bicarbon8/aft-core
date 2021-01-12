@@ -1,3 +1,3 @@
-export interface IClonable {
+export interface ICloneable {
     clone(): object;
 }

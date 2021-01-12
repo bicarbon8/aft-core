@@ -1,7 +1,6 @@
 /** configuration */
 export * from './configuration/test-config';
 /** construction */
-export * from './construction/iinitialise-options';
 export * from './construction/constructor';
 export * from './construction/plugin-loader';
 /** extensions */
@@ -17,6 +16,7 @@ export * from './integrations/test-cases/test-result';
 export * from './integrations/test-cases/test-status';
 /** helpers */
 export * from './helpers/build-info';
+export * from './helpers/cloner';
 export * from './helpers/convert';
 export * from './helpers/icloneable';
 export * from './helpers/idisposable';
@@ -36,5 +36,3 @@ export * from './logging/logging-level';
 export * from './wrappers/test-wrapper';
 export * from './wrappers/itest-wrapper-options';
 export * from './wrappers/should';
-export * from './wrappers/validation-error';
-export * from './wrappers/validator';

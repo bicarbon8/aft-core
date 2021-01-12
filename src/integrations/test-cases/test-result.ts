@@ -1,11 +1,11 @@
 import { TestStatus } from "./test-status";
 import { IDefect } from "../defects/idefect";
 import { RandomGenerator } from "../../helpers/random-generator";
-import { IClonable } from "../../helpers/icloneable";
+import { ICloneable } from "../../helpers/icloneable";
 import { ITestResult } from "./itest-result";
 import { ITestResultMetaData } from "./itest-result-metadata";
 
-export class TestResult implements ITestResult, IClonable {
+export class TestResult implements ITestResult, ICloneable {
     testId: string;
     resultMessage: string;
     status: TestStatus;
@@ -31,14 +31,14 @@ export class TestResult implements ITestResult, IClonable {
         this.defects.forEach(defect => {
             let i: any = defect;
             if (i["clone"]) {
-                i = (i as IClonable).clone();
+                i = (i as ICloneable).clone();
             }
             c.defects.push(i);
         });
         for(let key of Object.keys(this.metadata)) {
             let m = this.metadata[key];
             if (m["clone"]) {
-                m = (m as IClonable).clone();
+                m = (m as ICloneable).clone();
             }
             c.metadata[key] = m;
         };

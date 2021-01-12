@@ -1,4 +1,4 @@
 export interface ILoggingOptions {
-    level: string;
-    pluginNames: string[];
+    level?: string;
+    pluginNames?: string[];
 }

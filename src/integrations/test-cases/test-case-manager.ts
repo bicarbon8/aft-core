@@ -46,10 +46,10 @@ export class TestCaseManager {
             if (handler && await handler.enabled()) {
                 return await handler.shouldRun(testId);
             }
-            return {success: true, message: `no ITestCaseHandlerPlugin in use so run all tests`} as IProcessingResult;
+            return {success: true, message: `no ITestCaseHandlerPlugin in use so run all tests`};
         }).catch(async (err) => {
             await this._logger.warn(err);
-            return {success: false, message: err} as IProcessingResult;
+            return {success: false, message: err};
         });
     }
 

@@ -135,10 +135,10 @@ export module TestConfig {
             let matchResults = str.match(/^%(.*)%$/);
             if (matchResults && matchResults.length > 0) {
                 let envValStr: string = process.env[matchResults[1]];
-                return {obj: envValStr, success: true} as IProcessingResult;
+                return {obj: envValStr, success: true};
             }
         }
-        return {obj: null, success: false} as IProcessingResult;
+        return {success: false};
     }
 
     /**
@@ -152,13 +152,13 @@ export module TestConfig {
         if (str) {        
             try {
                 let jsonObj: object = JSON.parse(str);
-                return {obj: jsonObj, success: true} as IProcessingResult;
+                return {obj: jsonObj, success: true};
             } catch (e) { 
                 err = `[isJsonString] for string value of '${str}' threw an error of: ${e}`;
             }
         } else {
             err = `[isJsonString] for string value of '${str}' is not valid.`
         }
-        return {obj: null, success: false, message: err};
+        return {success: false, message: err};
     }
 }

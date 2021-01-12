@@ -22,7 +22,7 @@ describe('TestLog', () => {
     });
 
     it('will send logs to any registered ILoggingPlugin implementations', async () => {
-        let opts: ILoggingOptions = {pluginNames: ['./dist/test/logging/fake-logger']} as ILoggingOptions;
+        let opts: ILoggingOptions = {pluginNames: ['./dist/test/logging/fake-logger']};
         let logger: TestLog = new TestLog('will send logs to any registered ILoggingPlugin implementations', opts);
 
         let messages: string[] = [];
@@ -46,7 +46,7 @@ describe('TestLog', () => {
     });
 
     it('will send cloned TestResult to any registered ILoggingPlugin implementations', async () => {
-        let opts: ILoggingOptions = {pluginNames: ['./dist/test/logging/fake-logger']} as ILoggingOptions;
+        let opts: ILoggingOptions = {pluginNames: ['./dist/test/logging/fake-logger']};
         let logger: TestLog = new TestLog('will send cloned TestResult to any registered ILoggingPlugin implementations', opts);
 
         let result: TestResult = new TestResult(RandomGenerator.getString(100));
@@ -66,7 +66,7 @@ describe('TestLog', () => {
     });
 
     it('calls ILoggingPlugin.finalise on TestLog.dispose', async () => {
-        let opts: ILoggingOptions = {pluginNames: ['./dist/test/logging/fake-logger']} as ILoggingOptions;
+        let opts: ILoggingOptions = {pluginNames: ['./dist/test/logging/fake-logger']};
         let logger: TestLog = new TestLog('calls ILoggingPlugin.finalise on TestLog.dispose', opts);
 
         await logger.info(RandomGenerator.getString(18));
@@ -79,7 +79,7 @@ describe('TestLog', () => {
     });
 
     it('implements IDisposable', async () => {
-        let opts: ILoggingOptions = {pluginNames: ['./dist/test/logging/fake-logger']} as ILoggingOptions;
+        let opts: ILoggingOptions = {pluginNames: ['./dist/test/logging/fake-logger']};
         let message = RandomGenerator.getString(30);
 
         await using(new TestLog('implements IDisposable', opts), async (logger) => {
