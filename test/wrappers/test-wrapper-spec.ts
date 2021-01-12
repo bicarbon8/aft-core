@@ -97,7 +97,7 @@ describe('TestWrapper', () => {
                 return defects;
             });
 
-            await tw.because('neither there exists and open defect');
+            await tw.because('there exists an open defect');
 
             expect(DefectManager.instance().findDefects).toHaveBeenCalledWith('C1234');
             expect(DefectManager.instance().findDefects).not.toHaveBeenCalledWith('C2345');
