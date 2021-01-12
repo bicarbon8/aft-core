@@ -78,9 +78,6 @@ export class TestWrapper {
         this.logger.initName(this.reason);
         
         let result: IProcessingResult = await this.run();
-        if (!result.success) {
-            throw new Error(result.message);
-        }
 
         return result.success;
     }
@@ -157,17 +154,17 @@ export class TestWrapper {
                     }
                 } catch(e) {
                     status = TestStatus.Retest;
-                    message = e;
+                    message += new TestException(e).asSimpleString();
                 }
             } else {
                 status = TestStatus.Skipped;
-                message = shouldRun.message;
+                message += shouldRun.message;
             }
         } else {
-            message = 'no test expectation supplied so nothing could be tested';
+            message += 'no test expectation supplied so nothing could be tested';
         }
         
-        this.logResult(status, message);
+        await this.logResult(status, message);
         return {obj: status, message: message, success: status == TestStatus.Passed};
     }
 
@@ -177,7 +174,7 @@ export class TestWrapper {
             return tcShouldRun;
         }
         let dShouldRun: IProcessingResult = await this.shouldRun_defects();
-        if (!dShouldRun) {
+        if (!dShouldRun.success) {
             return dShouldRun;
         }
         return {success: true} as IProcessingResult;
@@ -261,6 +258,7 @@ export class TestWrapper {
 
 export module AFT {
     export async function tw(expectation: Func<void, any>, options?: ITestWrapperOptions): Promise<TestWrapper> {
-        return await new TestWrapper().init(expectation, options);
+        let t: TestWrapper = new TestWrapper();
+        return await t.init(expectation, options);
     }
 }

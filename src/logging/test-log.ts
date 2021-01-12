@@ -107,17 +107,20 @@ export class TestLog implements IDisposable {
         let plugins: ILoggingPlugin[] = await this.plugins();
         for (var i=0; i<plugins.length; i++) {
             let p: ILoggingPlugin = plugins[i];
-            try {
-                let enabled: boolean = await p.enabled();
-                if (enabled) {
-                    let r: ITestResult;
-                    if (result["clone"]) {
-                        r = (result as unknown as IClonable).clone() as ITestResult;
+            if (p) {
+                try {
+                    let enabled: boolean = await p.enabled();
+                    if (enabled) {
+                        let r: ITestResult;
+                        if (result["clone"]) {
+                            r = (result as unknown as IClonable).clone() as ITestResult;
+                        }
+                        await p.logResult(r);
                     }
-                    await p.logResult(r);
+                } catch (e) {
+                    console.log(TestLog.format(this.name, LoggingLevel.warn, 
+                        `unable to send result to '${p.name || 'unknown'}' plugin due to: ${e}`));
                 }
-            } catch (e) {
-                console.log(TestLog.format(this.name, LoggingLevel.warn, "unable to send result to '" + p.name + "' plugin due to: " + e));
             }
         }
     }

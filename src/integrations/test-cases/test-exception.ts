@@ -5,7 +5,7 @@ export class TestException {
     Message: string;
     StackTrace: string;
 
-    constructor(err: Error, full: boolean) {
+    constructor(err: Error, full: boolean = true) {
         if (err) {
             let message: string = this.removeBadCharacters(err.message);
             let stack: string = this.removeBadCharacters(err.stack);

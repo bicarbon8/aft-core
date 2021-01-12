@@ -3,7 +3,8 @@
   "spec_files": [
     "**/*-spec.js"
   ],
-  "stopSpecOnExpectationFailure": false,
+  "stopSpecOnExpectationFailure": true,
   "random": true,
-  "defaultTimeoutInterval": "180000"
+  "defaultTimeoutInterval": "180000",
+  "allowRespy": true
 }

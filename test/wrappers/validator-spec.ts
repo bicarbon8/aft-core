@@ -1,3 +1,4 @@
+import { should } from "../../src";
 import { Validator } from "../../src/wrappers/validator";
 
 describe('Validator', () => {

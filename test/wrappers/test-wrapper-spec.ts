@@ -1,10 +1,7 @@
 import { AFT, TestWrapper } from "../../src/wrappers/test-wrapper";
 import { ITestWrapperOptions } from "../../src/wrappers/itest-wrapper-options";
-import { TestStatus } from "../../src/integrations/test-cases/test-status";
-import { should } from "../../src/wrappers/should";
-import { RandomGenerator, TestResult, Wait } from "../../src";
+import { DefectStatus, IDefect, IProcessingResult } from "../../src";
 import { TestCaseManager } from "../../src/integrations/test-cases/test-case-manager";
-import { ITestCaseManagerOptions } from "../../src/integrations/test-cases/itest-case-manager-options";
 import { DefectManager } from "../../src/integrations/defects/defect-manager";
 
 let consoleLog = console.log;
@@ -44,11 +41,68 @@ describe('TestWrapper', () => {
 
         it('will log failed result for passed in testIds on a failed completion', async () => {
             let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345']} as ITestWrapperOptions;
-            let tw: TestWrapper = await AFT.tw(() => expect(false).toBeTruthy(), options);
+            let tw: TestWrapper = await AFT.tw(() => false, options);
             spyOn(tw.logger, 'fail').and.callThrough();
     
-            expect(async () => {await tw.because('false is not true');}).toThrow();
+            await tw.because('false is not passing');
+
             expect(tw.logger.fail).toHaveBeenCalledTimes(2);
+        });
+
+        it('will skip execution if all tests should not be run', async () => {
+            let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345']} as ITestWrapperOptions;
+            let notExpected: boolean = false;
+            let tw: TestWrapper = await AFT.tw(() => notExpected = true, options);
+            let spy = spyOn(TestCaseManager.instance(), 'shouldRun').and.callFake(async (testId: string): Promise<IProcessingResult> => {
+                return {success: false, message: `testId '${testId}' should not be run`} as IProcessingResult;
+            });
+
+            await tw.because('neither test should be run');
+
+            expect(TestCaseManager.instance().shouldRun).toHaveBeenCalledWith('C1234');
+            expect(TestCaseManager.instance().shouldRun).toHaveBeenCalledWith('C2345');
+            expect(notExpected).toBeFalsy();
+            spy.and.callThrough();
+        });
+
+        it('will run if only some tests should not be run', async () => {
+            let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345']} as ITestWrapperOptions;
+            let notExpected: boolean = false;
+            let tw: TestWrapper = await AFT.tw(() => notExpected = true, options);
+            let spy = spyOn(TestCaseManager.instance(), 'shouldRun').and.callFake(async (testId: string): Promise<IProcessingResult> => {
+                if (testId == 'C1234') {
+                    return {success: false, message: `testId '${testId}' should not be run`} as IProcessingResult;
+                } else {
+                    return {success: true, message: `testId '${testId}' should be run`} as IProcessingResult;
+                }
+            });
+
+            await tw.because('neither test should be run');
+
+            expect(TestCaseManager.instance().shouldRun).toHaveBeenCalledWith('C1234');
+            expect(TestCaseManager.instance().shouldRun).toHaveBeenCalledWith('C2345');
+            expect(notExpected).toBeTruthy();
+            spy.and.callThrough();
+        });
+
+        it('will skip execution if any open defect is found referencing testIds', async () => {
+            let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345']} as ITestWrapperOptions;
+            let notExpected: boolean = false;
+            let tw: TestWrapper = await AFT.tw(() => notExpected = true, options);
+            let spy = spyOn(DefectManager.instance(), 'findDefects').and.callFake(async (searchTerm: string): Promise<IDefect[]> => {
+                let defects: IDefect[] = [
+                    {id: 'AUTO-123', title: `[${searchTerm}] fake defect title`, status: DefectStatus.closed} as IDefect,
+                    {id: 'AUTO-124', title: `[${searchTerm}] fake defect title`, status: DefectStatus.open} as IDefect,
+                ];
+                return defects;
+            });
+
+            await tw.because('neither there exists and open defect');
+
+            expect(DefectManager.instance().findDefects).toHaveBeenCalledWith('C1234');
+            expect(DefectManager.instance().findDefects).not.toHaveBeenCalledWith('C2345');
+            expect(notExpected).toBeFalsy();
+            spy.and.callThrough();
         });
     });
 });
