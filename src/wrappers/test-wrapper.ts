@@ -5,19 +5,22 @@ import { TestStatus } from "../integrations/test-cases/test-status";
 import { TestResult } from "../integrations/test-cases/test-result";
 import '../extensions/string-extensions';
 import '../extensions/set-extensions';
-import { TestException } from "../integrations/test-cases/test-exception";
 import { Convert } from "../helpers/convert";
-import { Action } from "../helpers/action";
 import { IProcessingResult } from "../helpers/iprocessing-result";
 import { TestCaseManager } from "../integrations/test-cases/test-case-manager";
 import { IDefect } from "../integrations/defects/idefect";
 import { DefectManager } from "../integrations/defects/defect-manager";
 import { DefectStatus } from "../integrations/defects/defect-status";
 import { ITestResult } from "../integrations/test-cases/itest-result";
-import { ISafeStringOption } from "../helpers/isafe-string-option";
 
 /**
- * provides helper methods and properties for use when integration or functional testing
+ * provides pre-test execution filtering based on specified 
+ * test IDs or defect IDs and post-test results logging. usage
+ * is intended to be managed through the `should(expectation, options)`
+ * function via:
+ * ```
+ * should(() => expect(true).toBeTruthy()).because('true is truthy');
+ * ```
  */
 export class TestWrapper {
     private _expectation: Func<void, any>;
@@ -63,6 +66,12 @@ export class TestWrapper {
         return this._loggedCases;
     }
     
+    /**
+     * function is intended to be utilised via the `should(expectation, options)` function
+     * and not directly
+     * @param expectation an expectation like `expect(true).toBeFalsy()`
+     * @param options optional ITestWrapperOptions allowing test IDs, defect IDs and a `because` reason to be passed in
+     */
     async init(expectation: Func<void, any>, options?: ITestWrapperOptions): Promise<TestWrapper> {
         this._expectation = expectation;
         this._reason = this._expectation.toString();
@@ -100,8 +109,11 @@ export class TestWrapper {
 
     /**
      * function checks if the expectation should be run
-     * and if so runs it and logs the result
-     * @param reason reason why result should be true
+     * and if so runs it and logs the result using a `TestLog.addTestResult`
+     * call for every specified `testId`. if no `testId` is specified
+     * the `TestLog.addTestResult` call will be made only once
+     * @param reason reason why result should be true. this will become part of 
+     * any reported failure reasons
      */
     async because(reason?: string): Promise<boolean> {
         this._reason += ` because ${reason}`;
@@ -178,8 +190,8 @@ export class TestWrapper {
             let shouldRun: IProcessingResult = await this.shouldRun();
             if (shouldRun.success) {
                 try {
-                    let result: boolean = await Promise.resolve<boolean>(this._expectation());
-                    if (result != false) {
+                    let result = await Promise.resolve(this._expectation());
+                    if (result !== false) {
                         status = TestStatus.Passed;
                     } else {
                         status = TestStatus.Failed;

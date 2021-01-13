@@ -83,7 +83,7 @@ describe('TestLog', () => {
         let message = RandomGenerator.getString(30);
 
         await using(new TestLog('implements IDisposable', opts), async (logger) => {
-            logger.info(message);
+            await logger.info(message);
         });
 
         let actual: LogMessage = LoggingPluginStore.logs[0];
