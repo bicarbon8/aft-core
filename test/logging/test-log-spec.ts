@@ -63,6 +63,7 @@ describe('TestLog', () => {
 
         expect(LoggingPluginStore.logs.length).toEqual(0);
         expect(LoggingPluginStore.results.length).toEqual(1);
+        expect(LoggingPluginStore.results[0]).not.toBe(result);
         expect(LoggingPluginStore.results[0].testId).toEqual(result.testId);
         expect(LoggingPluginStore.results[0].created).toEqual(result.created);
     });
