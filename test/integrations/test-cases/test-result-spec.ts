@@ -1,22 +1,18 @@
 import { TestResult, RandomGenerator, TestStatus } from "../../../src";
+import { ITestResultOptions } from "../../../src/integrations/test-cases/itest-result-options";
 
 describe('TestResult', () => {
-    it('copies all MetaData when cloning', async () => {
-        let expected: TestResult = new TestResult(RandomGenerator.getString(100));
-        expected.testId = 'C' + RandomGenerator.getInt(100, 9999);
-        expected.status = TestStatus.Retest;
-        for (var i=0; i<5; i++) {
-            expected.metadata[RandomGenerator.getString(5)] = RandomGenerator.getString(10, true, true);
-        }
+    it('sets default values for resultId created and status', async () => {
+        let options: ITestResultOptions = {
+            resultMessage: RandomGenerator.getString(100),
+            testId: 'C' + RandomGenerator.getInt(100, 9999)
+        };
+        let actual: TestResult = new TestResult(options);
 
-        let actual: TestResult = expected.clone();
-
-        expect(actual.testId).toEqual(expected.testId);
-        expect(actual.resultId).not.toEqual(expected.resultId);
-        expect(actual.status).toEqual(expected.status);
-        expect(actual.resultMessage).toEqual(expected.resultMessage);
-        for(let key of Object.keys(expected.metadata)) {
-            expect(actual.metadata[key]).toEqual(expected.metadata[key]);
-        }
+        expect(actual.testId).toEqual(options.testId);
+        expect(actual.resultId).toBeDefined();
+        expect(actual.created).toBeDefined();
+        expect(actual.status).toEqual(TestStatus.Untested);
+        expect(actual.resultMessage).toEqual(options.resultMessage);
     });
 });

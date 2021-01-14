@@ -5,10 +5,11 @@ import { LoggingLevel } from "./logging-level";
 import { PluginLoader } from "../construction/plugin-loader";
 import { ILoggingOptions } from "./ilogging-options";
 import { TestConfig } from "../configuration/test-config";
-import { ITestResult } from "../integrations/test-cases/itest-result";
+import { ITestResultOptions } from "../integrations/test-cases/itest-result-options";
 import { ICloneable } from "../helpers/icloneable";
 import { Convert } from "../helpers/convert";
 import { ISafeStringOption } from "../helpers/isafe-string-option";
+import { Cloner } from "../helpers/cloner";
 
 export class TestLog implements IDisposable {
     name: string;
@@ -103,7 +104,7 @@ export class TestLog implements IDisposable {
         }
     }
 
-    async logResult(result: ITestResult): Promise<void> {
+    async logResult(result: TestResult): Promise<void> {
         let plugins: ILoggingPlugin[] = await this.plugins();
         for (var i=0; i<plugins.length; i++) {
             let p: ILoggingPlugin = plugins[i];
@@ -111,10 +112,7 @@ export class TestLog implements IDisposable {
                 try {
                     let enabled: boolean = await p.enabled();
                     if (enabled) {
-                        let r: ITestResult;
-                        if (result["clone"]) {
-                            r = (result as unknown as ICloneable).clone() as ITestResult;
-                        }
+                        let r: TestResult = Cloner.clone(result);
                         await p.logResult(r);
                     }
                 } catch (e) {

@@ -1,4 +1,4 @@
-import { RandomGenerator, TestResult } from "../../src";
+import { ICloneable, RandomGenerator, TestResult } from "../../src";
 import { Cloner } from "../../src/helpers/cloner";
 import { TestException } from "../../src/integrations/test-cases/test-exception";
 
@@ -7,7 +7,8 @@ describe('Cloner', () => {
         let expected = {
             foo: RandomGenerator.getString(7), 
             bar: RandomGenerator.getInt(99, 999), 
-            baz: RandomGenerator.getBoolean()
+            baz: RandomGenerator.getBoolean(),
+            bof: new Date()
         };
 
         let actual = Cloner.clone(expected);
@@ -80,12 +81,32 @@ describe('Cloner', () => {
     });
 
     it('will call the \'clone\' function of an ICloneable object', () => {
-        let expected = new TestResult(RandomGenerator.getString(22));
+        let expected = new FooTestCloneable();
         spyOn(expected, 'clone').and.callThrough();
 
         let actual = Cloner.clone(expected);
 
         expect(expected.clone).toHaveBeenCalledTimes(1);
-        expect(actual.created).not.toBe(expected.created);
+        expect(actual.bar).not.toBe(expected.bar);
     });
 });
+
+class FooTestCloneable implements ICloneable {
+    foo: string;
+    bar: number;
+    baz: boolean;
+
+    constructor() {
+        this.foo = RandomGenerator.getString(14);
+        this.bar = RandomGenerator.getInt(0, 9);
+        this.baz = RandomGenerator.getBoolean();
+    }
+
+    clone(): object {
+        let clone: FooTestCloneable = new FooTestCloneable();
+        clone.foo = this.foo;
+        clone.bar = RandomGenerator.getInt(99, 999);
+        clone.baz = this.baz;
+        return clone;
+    }
+}

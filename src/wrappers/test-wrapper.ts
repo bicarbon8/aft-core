@@ -11,7 +11,7 @@ import { TestCaseManager } from "../integrations/test-cases/test-case-manager";
 import { IDefect } from "../integrations/defects/idefect";
 import { DefectManager } from "../integrations/defects/defect-manager";
 import { DefectStatus } from "../integrations/defects/defect-status";
-import { ITestResult } from "../integrations/test-cases/itest-result";
+import { ITestResultOptions } from "../integrations/test-cases/itest-result-options";
 
 /**
  * provides pre-test execution filtering based on specified 
@@ -163,9 +163,9 @@ export class TestWrapper {
             fullMessage = TestStatus[status] + ': ' + message;
         }
 
-        let results: ITestResult[] = this.generateTestResults(status, fullMessage);
+        let results: TestResult[] = this.generateTestResults(status, fullMessage);
         for (var i=0; i<results.length; i++) {
-            let result: ITestResult = results[i];
+            let result: TestResult = results[i];
             try {
                 await this._logger.logResult(result);
                 if (result.testId) {
@@ -178,10 +178,9 @@ export class TestWrapper {
     }
 
     /**
-     * runs the passed in action, passing in a new Validator
-     * as an argument and returns any Errors thrown
-     * instead of letting the Error out
-     * @param action the action to run
+     * checks the specified test IDs to determine if the
+     * expectation should be executed and returns a result
+     * based on execution or why it should not be run
      */
     private async run(): Promise<IProcessingResult> {
         let status: TestStatus = TestStatus.Untested;
@@ -255,27 +254,31 @@ export class TestWrapper {
         return {success: true};
     }
 
-    private generateTestResults(status: TestStatus, logMessage: string): ITestResult[] {
-        let results: ITestResult[] = [];
+    private generateTestResults(status: TestStatus, logMessage: string): TestResult[] {
+        let results: TestResult[] = [];
         if (this._testCases.length > 0) {
             for (var i=0; i<this._testCases.length; i++) {
                 let testId: string = this._testCases[i];
-                let result: ITestResult = this.generateTestResult(status, logMessage, testId);
+                let result: TestResult = this.generateTestResult(status, logMessage, testId);
                 results.push(result);
             }
         } else {
-            let result: ITestResult = this.generateTestResult(status, logMessage);
+            let result: TestResult = this.generateTestResult(status, logMessage);
             results.push(result);
         }
         return results;
     }
 
-    private generateTestResult(status: TestStatus, logMessage: string, testId?: string): ITestResult {
-        let result: TestResult = new TestResult(logMessage.ellide(100));
-        result.testId = testId;
-        result.status = status;
-        result.metadata.durationMs = Convert.toElapsedMs(this._startTime);
-        result.metadata.statusStr = TestStatus[status];
+    private generateTestResult(status: TestStatus, logMessage: string, testId?: string): TestResult {
+        let result: TestResult = new TestResult({
+            testId: testId,
+            resultMessage: logMessage.ellide(100),
+            status: status,
+            metadata: {
+                durationMs: Convert.toElapsedMs(this._startTime),
+                statusStr: TestStatus[status]
+            }
+        });
         if (this._errors.length > 0) {
             let exceptionsArray: string[] = [];
             for (var i=0; i<this._errors.length; i++) {

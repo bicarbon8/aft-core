@@ -25,3 +25,5 @@ node_modules/
 dist/
 #generated modules
 *.tgz
+# code coverage
+.nyc_output/

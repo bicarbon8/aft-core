@@ -15,6 +15,8 @@ export module Cloner {
                         for (var i=0; i<element.length; i++) {
                             output[key][i] = clone(element[i]);
                         }
+                    } else if (element instanceof Date) {
+                        output[key] = element;
                     } else {
                         output[key] = clone(element);
                     }

@@ -12,7 +12,8 @@
     "clean": "rimraf ./dist",
     "build": "npm run clean && tsc --declaration",
     "pretest": "npm run build",
-    "test": "./node_modules/.bin/jasmine JASMINE_CONFIG_PATH=./jasmine.json"
+    "test": "./node_modules/.bin/jasmine JASMINE_CONFIG_PATH=./jasmine.json",
+    "coverage": "nyc npm run test"
   },
   "keywords": [
     "aft",
@@ -37,6 +38,7 @@
     "@types/node": "^12.12.35",
     "@types/uuid": "3.4.6",
     "jasmine": "^3.6.3",
+    "nyc": "^15.1.0",
     "rimraf": "^3.0.2",
     "typescript": "^3.9.7"
   }

@@ -1,11 +1,10 @@
 import { TestStatus } from "./test-status";
 import { IDefect } from "../defects/idefect";
 import { RandomGenerator } from "../../helpers/random-generator";
-import { ICloneable } from "../../helpers/icloneable";
-import { ITestResult } from "./itest-result";
+import { ITestResultOptions } from "./itest-result-options";
 import { ITestResultMetaData } from "./itest-result-metadata";
 
-export class TestResult implements ITestResult, ICloneable {
+export class TestResult {
     testId: string;
     resultMessage: string;
     status: TestStatus;
@@ -14,35 +13,13 @@ export class TestResult implements ITestResult, ICloneable {
     defects: IDefect[];
     metadata: ITestResultMetaData;
 
-    constructor(resultMessage?: string) {
-        this.resultMessage = resultMessage;
-        this.status = TestStatus.Untested;
-        this.resultId = RandomGenerator.getGuid();
-        this.created = new Date();
-        this.defects = [];
-        this.metadata = {} as ITestResultMetaData;
-    }
-
-    clone(): TestResult {
-        let c: TestResult = new TestResult();
-        c.testId = this.testId;
-        c.resultMessage = this.resultMessage;
-        c.status = this.status;
-        this.defects.forEach(defect => {
-            let i: any = defect;
-            if (i["clone"]) {
-                i = (i as ICloneable).clone();
-            }
-            c.defects.push(i);
-        });
-        for(let key of Object.keys(this.metadata)) {
-            let m = this.metadata[key];
-            if (m["clone"]) {
-                m = (m as ICloneable).clone();
-            }
-            c.metadata[key] = m;
-        };
-
-        return c;
+    constructor(options?: ITestResultOptions) {
+        this.testId = options?.testId;
+        this.resultMessage = options?.resultMessage;
+        this.status = options?.status || TestStatus.Untested;
+        this.resultId = options?.resultId || RandomGenerator.getGuid();
+        this.created = options?.created || new Date();
+        this.defects = options?.defects || [];
+        this.metadata = options?.metadata || {} as ITestResultMetaData;
     }
 }

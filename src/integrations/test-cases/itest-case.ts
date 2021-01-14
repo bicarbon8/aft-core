@@ -1,4 +1,4 @@
-import { ITestResult } from "./itest-result";
+import { ITestResultOptions } from "./itest-result-options";
 import { TestStatus } from "./test-status";
 
 export interface ITestCase {
