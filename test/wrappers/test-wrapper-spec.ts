@@ -46,83 +46,91 @@ describe('TestWrapper', () => {
         expect(tw.logger().name()).toMatch(/(TestWrapper_)[0-9a-z]+/g);
     });
 
-    describe('because method', () => {
-        it('will log success result for passed in testIds on successful completion', async () => {
-            let logger: TestLog = new TestLog({pluginNames: []});
-            spyOn(logger, 'pass').and.callThrough();
-            let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345'], logger: logger};
-            let tw: TestWrapper = new TestWrapper();
-            
-            await tw.run(() => expect(false).toBeFalsy(), options);
-            
-            expect(tw.logger().pass).toHaveBeenCalledTimes(2);
+    it('can supply itself to the expectation function', async () => {
+        let testWrapper: TestWrapper = new TestWrapper();
+        await testWrapper.run((tw) => {
+            tw.logger().step('expect true to not be falsy');
+            expect(true).not.toBeFalsy();
+            tw.logger().step('profit!');
+            expect(false).not.toBeTruthy();
+        }, {description: 'expect true is not false and false is not true'});
+    });
+
+    it('will log success result for passed in testIds on successful completion', async () => {
+        let logger: TestLog = new TestLog({pluginNames: []});
+        spyOn(logger, 'pass').and.callThrough();
+        let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345'], logger: logger};
+        let tw: TestWrapper = new TestWrapper();
+        
+        await tw.run(() => expect(false).toBeFalsy(), options);
+        
+        expect(tw.logger().pass).toHaveBeenCalledTimes(2);
+    });
+
+    it('will log failed result for passed in testIds on a failed completion', async () => {
+        let logger: TestLog = new TestLog({pluginNames: []});
+        spyOn(logger, 'fail').and.callThrough();
+        let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345'], logger: logger};
+        let tw: TestWrapper = new TestWrapper();
+
+        await tw.run(() => false, options);
+
+        expect(tw.logger().fail).toHaveBeenCalledTimes(2);
+    });
+
+    it('will skip execution if all tests should not be run', async () => {
+        let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345']};
+        let notExpected: boolean = false;
+        let tw: TestWrapper = new TestWrapper();
+        let spy = spyOn(TestCaseManager.instance(), 'shouldRun').and.callFake(async (testId: string): Promise<IProcessingResult> => {
+            return {success: false, message: `testId '${testId}' should not be run`};
         });
 
-        it('will log failed result for passed in testIds on a failed completion', async () => {
-            let logger: TestLog = new TestLog({pluginNames: []});
-            spyOn(logger, 'fail').and.callThrough();
-            let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345'], logger: logger};
-            let tw: TestWrapper = new TestWrapper();
-    
-            await tw.run(() => false, options);
+        await tw.run(() => notExpected = true, options);
 
-            expect(tw.logger().fail).toHaveBeenCalledTimes(2);
-        });
+        expect(TestCaseManager.instance().shouldRun).toHaveBeenCalledWith('C1234');
+        expect(TestCaseManager.instance().shouldRun).toHaveBeenCalledWith('C2345');
+        expect(notExpected).toBeFalsy();
+        spy.and.callThrough();
+    });
 
-        it('will skip execution if all tests should not be run', async () => {
-            let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345']};
-            let notExpected: boolean = false;
-            let tw: TestWrapper = new TestWrapper();
-            let spy = spyOn(TestCaseManager.instance(), 'shouldRun').and.callFake(async (testId: string): Promise<IProcessingResult> => {
+    it('will run if only some tests should not be run', async () => {
+        let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345']};
+        let notExpected: boolean = false;
+        let tw: TestWrapper = await new TestWrapper();
+        let spy = spyOn(TestCaseManager.instance(), 'shouldRun').and.callFake(async (testId: string): Promise<IProcessingResult> => {
+            if (testId == 'C1234') {
                 return {success: false, message: `testId '${testId}' should not be run`};
-            });
-
-            await tw.run(() => notExpected = true, options);
-
-            expect(TestCaseManager.instance().shouldRun).toHaveBeenCalledWith('C1234');
-            expect(TestCaseManager.instance().shouldRun).toHaveBeenCalledWith('C2345');
-            expect(notExpected).toBeFalsy();
-            spy.and.callThrough();
+            } else {
+                return {success: true, message: `testId '${testId}' should be run`};
+            }
         });
 
-        it('will run if only some tests should not be run', async () => {
-            let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345']};
-            let notExpected: boolean = false;
-            let tw: TestWrapper = await new TestWrapper();
-            let spy = spyOn(TestCaseManager.instance(), 'shouldRun').and.callFake(async (testId: string): Promise<IProcessingResult> => {
-                if (testId == 'C1234') {
-                    return {success: false, message: `testId '${testId}' should not be run`};
-                } else {
-                    return {success: true, message: `testId '${testId}' should be run`};
-                }
-            });
+        await tw.run(() => notExpected = true, options);
 
-            await tw.run(() => notExpected = true, options);
+        expect(TestCaseManager.instance().shouldRun).toHaveBeenCalledWith('C1234');
+        expect(TestCaseManager.instance().shouldRun).toHaveBeenCalledWith('C2345');
+        expect(notExpected).toBeTruthy();
+        spy.and.callThrough();
+    });
 
-            expect(TestCaseManager.instance().shouldRun).toHaveBeenCalledWith('C1234');
-            expect(TestCaseManager.instance().shouldRun).toHaveBeenCalledWith('C2345');
-            expect(notExpected).toBeTruthy();
-            spy.and.callThrough();
+    it('will skip execution if any open defect is found referencing testIds', async () => {
+        let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345']};
+        let notExpected: boolean = false;
+        let tw: TestWrapper = await new TestWrapper();
+        let spy = spyOn(DefectManager.instance(), 'findDefects').and.callFake(async (searchTerm: string): Promise<IDefect[]> => {
+            let defects: IDefect[] = [
+                {id: 'AUTO-123', title: `[${searchTerm}] fake defect title`, status: DefectStatus.closed} as IDefect,
+                {id: 'AUTO-124', title: `[${searchTerm}] fake defect title`, status: DefectStatus.open} as IDefect,
+            ];
+            return defects;
         });
 
-        it('will skip execution if any open defect is found referencing testIds', async () => {
-            let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345']};
-            let notExpected: boolean = false;
-            let tw: TestWrapper = await new TestWrapper();
-            let spy = spyOn(DefectManager.instance(), 'findDefects').and.callFake(async (searchTerm: string): Promise<IDefect[]> => {
-                let defects: IDefect[] = [
-                    {id: 'AUTO-123', title: `[${searchTerm}] fake defect title`, status: DefectStatus.closed} as IDefect,
-                    {id: 'AUTO-124', title: `[${searchTerm}] fake defect title`, status: DefectStatus.open} as IDefect,
-                ];
-                return defects;
-            });
+        await tw.run(() => notExpected = true, options);
 
-            await tw.run(() => notExpected = true, options);
-
-            expect(DefectManager.instance().findDefects).toHaveBeenCalledWith('C1234');
-            expect(DefectManager.instance().findDefects).not.toHaveBeenCalledWith('C2345');
-            expect(notExpected).toBeFalsy();
-            spy.and.callThrough();
-        });
+        expect(DefectManager.instance().findDefects).toHaveBeenCalledWith('C1234');
+        expect(DefectManager.instance().findDefects).not.toHaveBeenCalledWith('C2345');
+        expect(notExpected).toBeFalsy();
+        spy.and.callThrough();
     });
 });

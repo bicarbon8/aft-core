@@ -23,7 +23,7 @@ import { RandomGenerator } from "../helpers/random-generator";
  * ```
  */
 export class TestWrapper {
-    private _expectation: Func<void, any>;
+    private _expectation: Func<TestWrapper, any>;
     private _description: string;
     private _logger: TestLog;
     private _testCases: string[] = [];
@@ -34,7 +34,7 @@ export class TestWrapper {
     private _testCaseManager: TestCaseManager = null;
     private _defectManager: DefectManager = null;
 
-    expectation(): Func<void, any> {
+    expectation(): Func<TestWrapper, any> {
         return this._expectation;
     }
 
@@ -72,7 +72,7 @@ export class TestWrapper {
      * @param expectation an expectation like `expect(true).toBeFalsy()` or some function returning `true` to be run
      * @param options optional ITestWrapperOptions allowing test IDs, defect IDs and a `description` to be passed in
      */
-    async run(expectation: Func<void, any>, options?: ITestWrapperOptions): Promise<IProcessingResult> {
+    async run(expectation: Func<TestWrapper, any>, options?: ITestWrapperOptions): Promise<IProcessingResult> {
         this._expectation = expectation;
         
         this._initialiseName(options);
@@ -180,7 +180,7 @@ export class TestWrapper {
             let shouldRun: IProcessingResult = await this.shouldRun();
             if (shouldRun.success) {
                 try {
-                    let result = await Promise.resolve(this._expectation());
+                    let result = await Promise.resolve(this._expectation(this));
                     if (result !== false) {
                         status = TestStatus.Passed;
                     } else {
