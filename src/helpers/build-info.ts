@@ -1,5 +1,3 @@
-import { TestConfig } from "../configuration/test-config";
-
 export module BuildInfo {
     export async function name(): Promise<string> {
         // TODO: use Build Server plugin to get value

@@ -1,4 +1,4 @@
-import { RandomGenerator, should, TestLog } from "../src";
+import { RG, should } from "../src";
 
 describe('AFT', () => {
     it('is simple to integrate into existing expectations', async () => {
@@ -10,7 +10,7 @@ describe('AFT', () => {
             let count: number = 10;
             for (var i=0; i<count; i++) {
                 await tw.logger().info(`running count: ${i}`);
-                await tw.logger().warn(`random string: ${RandomGenerator.getString()}`);
+                await tw.logger().warn(`random string: ${RG.getString()}`);
                 expect(i).not.toBeNaN();
             }
         }, {testCases: ['C1234', 'C2345'], description: 'some tests require lots of actions'});

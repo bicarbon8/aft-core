@@ -1,5 +1,5 @@
 import { TestConfig } from "../../src/configuration/test-config";
-import { RandomGenerator } from "../../src/helpers/random-generator";
+import { RG } from "../../src/helpers/random-generator";
 import { LoggingLevel } from "../../src/logging/logging-level";
 
 describe('TestConfig', () => {
@@ -40,8 +40,8 @@ describe('TestConfig', () => {
         it('can modify loaded aftconfig.json object', async () => {
             let conf: object = await TestConfig.aftConfig();
     
-            let key: string = RandomGenerator.getString(10);
-            let val: string = RandomGenerator.getString(11);
+            let key: string = RG.getString(10);
+            let val: string = RG.getString(11);
             conf[key] = val;
     
             let conf2: object = await TestConfig.aftConfig();
@@ -53,11 +53,11 @@ describe('TestConfig', () => {
 
     describe('get', () => {
         it('can load values from environment variables', async () => {
-            let key: string = RandomGenerator.getString(12);
-            let envKey: string = RandomGenerator.getString(14);
+            let key: string = RG.getString(12);
+            let envKey: string = RG.getString(14);
             let expected: FooBar = {
-                foo: RandomGenerator.getString(9),
-                bar: RandomGenerator.getInt(999, 9999)
+                foo: RG.getString(9),
+                bar: RG.getInt(999, 9999)
             };
             process.env[envKey] = JSON.stringify(expected);
             await TestConfig.aftConfig()
@@ -74,11 +74,11 @@ describe('TestConfig', () => {
         });
 
         it('will return default if environment variable contains no data', async () => {
-            let key: string = RandomGenerator.getString(11);
-            let envKey: string = RandomGenerator.getString(12);
+            let key: string = RG.getString(11);
+            let envKey: string = RG.getString(12);
             let expected: FooBar = {
-                foo: RandomGenerator.getString(10),
-                bar: RandomGenerator.getInt(99, 999)
+                foo: RG.getString(10),
+                bar: RG.getInt(99, 999)
             };
             await TestConfig.aftConfig()
             .then((conf) => {
@@ -95,11 +95,11 @@ describe('TestConfig', () => {
     describe('getFrom', () => {
         it('can get expected values from full object by keys', async () => {
             let actual: object = {
-                foo: RandomGenerator.getString(12),
+                foo: RG.getString(12),
                 bar: {
-                    baz: RandomGenerator.getInt(9, 99),
+                    baz: RG.getInt(9, 99),
                     asd: {
-                        jkl: RandomGenerator.getGuid()
+                        jkl: RG.getGuid()
                     }
                 }
             };
@@ -111,11 +111,11 @@ describe('TestConfig', () => {
     
         it('will return null if passed in key does not exist', async () => {
             let actual: object = {
-                foo: RandomGenerator.getString(12),
+                foo: RG.getString(12),
                 bar: {
-                    baz: RandomGenerator.getInt(9, 99),
+                    baz: RG.getInt(9, 99),
                     asd: {
-                        jkl: RandomGenerator.getGuid()
+                        jkl: RG.getGuid()
                     }
                 }
             };

@@ -1,4 +1,4 @@
-import { RandomGenerator } from "../../src/helpers/random-generator";
+import { RandomGenerator, RG } from "../../src/helpers/random-generator";
 
 describe('RandomGenerator tests', () => {
     it('can generate a random string of alpha only characters', () => {
@@ -10,7 +10,7 @@ describe('RandomGenerator tests', () => {
     });
 
     it('can generate a random string of numeric only characters', () => {
-        let actual: string = RandomGenerator.getString(15, false, true);
+        let actual: string = RG.getString(15, false, true);
         expect(actual).not.toBeNull();
         expect(actual).not.toBeUndefined();
         expect(actual.length).toBe(15);
@@ -26,7 +26,7 @@ describe('RandomGenerator tests', () => {
     });
 
     it('can generate a random string of extended only characters', () => {
-        let actual: string = RandomGenerator.getString(12, false, false, false, true);
+        let actual: string = RG.getString(12, false, false, false, true);
         expect(actual).not.toBeNull();
         expect(actual).not.toBeUndefined();
         expect(actual.length).toBe(12);

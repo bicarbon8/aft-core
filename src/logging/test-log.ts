@@ -6,7 +6,7 @@ import { ILoggingOptions } from "./ilogging-options";
 import { TestConfig } from "../configuration/test-config";
 import { Convert } from "../helpers/convert";
 import { Cloner } from "../helpers/cloner";
-import { RandomGenerator } from "../helpers/random-generator";
+import { RG } from "../helpers/random-generator";
 
 export class TestLog {
     private _name: string;
@@ -17,7 +17,7 @@ export class TestLog {
     
     constructor(options?: ILoggingOptions) {
         this._options = options;
-        this.initName(this._options?.name || `TestLog_${RandomGenerator.getGuid()}`);
+        this.initName(this._options?.name || `TestLog_${RG.getGuid()}`);
     }
 
     name(): string {
@@ -54,38 +54,77 @@ export class TestLog {
         return this._plugins;
     }
 
+    /**
+     * calls the `log` function with a `level` of `LoggingLevel.Trace`
+     * @param message the message to be logged
+     */
     async trace(message: string): Promise<void> {
         await this.log(LoggingLevel.trace, message);
     }
 
+    /**
+     * calls the `log` function with a `level` of `LoggingLevel.Debug`
+     * @param message the message to be logged
+     */
     async debug(message: string): Promise<void> {
         await this.log(LoggingLevel.debug, message);
     }
 
+    /**
+     * calls the `log` function with a `level` of `LoggingLevel.Info`
+     * @param message the message to be logged
+     */
     async info(message: string): Promise<void> {
         await this.log(LoggingLevel.info, message);
     }
 
+    /**
+     * calls the `log` function with a `level` of `LoggingLevel.Step`
+     * @param message the message to be logged
+     */
     async step(message: string): Promise<void> {
         await this.log(LoggingLevel.step, ++this._stepCount + ': ' + message);
     }
 
+    /**
+     * calls the `log` function with a `level` of `LoggingLevel.Warn`
+     * @param message the message to be logged
+     */
     async warn(message: string): Promise<void> {
         await this.log(LoggingLevel.warn, message);
     }
 
+    /**
+     * calls the `log` function with a `level` of `LoggingLevel.Pass`
+     * @param message the message to be logged
+     */
     async pass(message: string): Promise<void> {
         await this.log(LoggingLevel.pass, message);
     }
 
+    /**
+     * calls the `log` function with a `level` of `LoggingLevel.Fail`
+     * @param message the message to be logged
+     */
     async fail(message: string): Promise<void> {
         await this.log(LoggingLevel.fail, message);
     }
 
+    /**
+     * calls the `log` function with a `level` of `LoggingLevel.Error`
+     * @param message the message to be logged
+     */
     async error(message: string): Promise<void> {
         await this.log(LoggingLevel.error, message);
     }
 
+    /**
+     * function will log the passed in `message` if its `level` is equal to
+     * or higher than the configured `logging.level` before sending the `level`
+     * and `message` on to any loaded `ILoggingPlugin` objects
+     * @param level the `LoggingLevel` of this message
+     * @param message the string to be logged
+     */
     async log(level: LoggingLevel, message: string): Promise<void> {
         let l: LoggingLevel = await this.level();
         if (level.value >= l.value && level != LoggingLevel.none) {
@@ -106,6 +145,11 @@ export class TestLog {
         }
     }
 
+    /**
+     * function will send the passed in `TestResult` to any loaded `ILoggingPlugin` objects
+     * allowing them to process the result
+     * @param result a `TestResult` object to be sent
+     */
     async logResult(result: TestResult): Promise<void> {
         let plugins: ILoggingPlugin[] = await this.plugins();
         for (var i=0; i<plugins.length; i++) {
@@ -125,6 +169,11 @@ export class TestLog {
         }
     }
 
+    /**
+     * loops through any loaded `ILoggingPlugin` objects and calls
+     * their `finalise` function. This should be called upon completion
+     * of any logging actions before destroying the `TestLog` instance
+     */
     async finalise(): Promise<void> {
         let plugins: ILoggingPlugin[] = await this.plugins();
         for (var i=0; i<plugins.length; i++) {

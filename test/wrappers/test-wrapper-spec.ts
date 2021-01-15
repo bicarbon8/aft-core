@@ -1,8 +1,4 @@
-import { TestWrapper } from "../../src/wrappers/test-wrapper";
-import { ITestWrapperOptions } from "../../src/wrappers/itest-wrapper-options";
-import { DefectStatus, IDefect, IProcessingResult, TestLog } from "../../src";
-import { TestCaseManager } from "../../src/integrations/test-cases/test-case-manager";
-import { DefectManager } from "../../src/integrations/defects/defect-manager";
+import { DefectStatus, IDefect, IProcessingResult, TestLog, ITestWrapperOptions, TestWrapper, TestCaseManager, DefectManager } from "../../src";
 
 let consoleLog = console.log;
 describe('TestWrapper', () => {

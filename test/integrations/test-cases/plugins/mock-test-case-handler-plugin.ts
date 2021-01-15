@@ -1,6 +1,4 @@
-import { IProcessingResult, RandomGenerator, TestStatus } from "../../../../src";
-import { ITestCase } from "../../../../src/integrations/test-cases/itest-case";
-import { ITestCaseHandlerPlugin } from "../../../../src/integrations/test-cases/plugins/itest-case-handler-plugin";
+import { IProcessingResult, RG, TestStatus, ITestCase, ITestCaseHandlerPlugin } from "../../../../src";
 
 export class MockTestCaseHandlerPlugin implements ITestCaseHandlerPlugin {
     name: string = 'mock-test-case-handler-plugin';
@@ -10,20 +8,20 @@ export class MockTestCaseHandlerPlugin implements ITestCaseHandlerPlugin {
     async getTestCase(testId: string): Promise<ITestCase> {
         return {
             id: testId,
-            title: RandomGenerator.getString(8),
-            description: RandomGenerator.getString(100),
-            status: RandomGenerator.getEnum(TestStatus)
+            title: RG.getString(8),
+            description: RG.getString(100),
+            status: RG.getEnum(TestStatus)
         } as ITestCase;
     }
     async findTestCases(searchTerm: string): Promise<ITestCase[]> {
         let cases: ITestCase[] = [];
-        let resultCount: number = RandomGenerator.getInt(1, 5);
+        let resultCount: number = RG.getInt(1, 5);
         for (var i=0; i<resultCount; i++) {
             let c: ITestCase = {
-                id: 'C' + RandomGenerator.getInt(100, 999),
-                title: RandomGenerator.getString(8),
-                description: RandomGenerator.getString(100),
-                status: RandomGenerator.getEnum(TestStatus)
+                id: 'C' + RG.getInt(100, 999),
+                title: RG.getString(8),
+                description: RG.getString(100),
+                status: RG.getEnum(TestStatus)
             } as ITestCase;
             cases.push(c);
         }
@@ -39,7 +37,7 @@ export class MockTestCaseHandlerPlugin implements ITestCaseHandlerPlugin {
                 return {obj: c2, success: true};
             default:
                 let c3: ITestCase = await this.getTestCase(testId);
-                return {obj: c3, message: RandomGenerator.getString(22), success: RandomGenerator.getBoolean()};
+                return {obj: c3, message: RG.getString(22), success: RG.getBoolean()};
         }
     }
 }

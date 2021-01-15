@@ -1,6 +1,6 @@
 import { TestStatus } from "./test-status";
 import { IDefect } from "../defects/idefect";
-import { RandomGenerator } from "../../helpers/random-generator";
+import { RG } from "../../helpers/random-generator";
 import { ITestResultOptions } from "./itest-result-options";
 import { ITestResultMetaData } from "./itest-result-metadata";
 
@@ -17,7 +17,7 @@ export class TestResult {
         this.testId = options?.testId;
         this.resultMessage = options?.resultMessage;
         this.status = options?.status || TestStatus.Untested;
-        this.resultId = options?.resultId || RandomGenerator.getGuid();
+        this.resultId = options?.resultId || RG.getGuid();
         this.created = options?.created || new Date();
         this.defects = options?.defects || [];
         this.metadata = options?.metadata || {} as ITestResultMetaData;

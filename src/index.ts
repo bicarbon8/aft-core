@@ -27,6 +27,21 @@ export * from './helpers/using';
 export * from './helpers/wait';
 export * from './helpers/func';
 export * from './helpers/action';
+/** integrations */
+export * from './integrations/defects/plugins/idefect-handler-plugin';
+export * from './integrations/defects/defect-manager';
+export * from './integrations/defects/defect-status';
+export * from './integrations/defects/idefect';
+export * from './integrations/defects/idefect-manager-options';
+export * from './integrations/test-cases/plugins/itest-case-handler-plugin';
+export * from './integrations/test-cases/itest-case';
+export * from './integrations/test-cases/itest-case-manager-options';
+export * from './integrations/test-cases/itest-result-metadata';
+export * from './integrations/test-cases/itest-result-options';
+export * from './integrations/test-cases/test-case-manager';
+export * from './integrations/test-cases/test-exception';
+export * from './integrations/test-cases/test-result';
+export * from './integrations/test-cases/test-status';
 /** logging */
 export * from './logging/plugins/ilogging-plugin';
 export * from './logging/test-log';

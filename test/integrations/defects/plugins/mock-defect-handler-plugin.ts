@@ -1,4 +1,4 @@
-import { DefectStatus, IDefect, IDefectHandlerPlugin, RandomGenerator } from "../../../../src";
+import { DefectStatus, IDefect, IDefectHandlerPlugin, RG } from "../../../../src";
 
 export class MockDefectHandlerPlugin implements IDefectHandlerPlugin {
     name: string = 'mock-defect-handler-plugin';
@@ -8,9 +8,9 @@ export class MockDefectHandlerPlugin implements IDefectHandlerPlugin {
     async getDefect(defectId: string): Promise<IDefect> {
         return {
             id: defectId, 
-            title: RandomGenerator.getString(17),
-            description: RandomGenerator.getString(150),
-            status: RandomGenerator.getEnum(DefectStatus)
+            title: RG.getString(17),
+            description: RG.getString(150),
+            status: RG.getEnum(DefectStatus)
         } as IDefect;
     }
     async findDefects(searchTerm: string): Promise<IDefect[]> {
@@ -25,13 +25,13 @@ export class MockDefectHandlerPlugin implements IDefectHandlerPlugin {
                 return [d2];
             default: 
                 let defects: IDefect[] = [];
-                let randomCount: number = RandomGenerator.getInt(1, 5);
+                let randomCount: number = RG.getInt(1, 5);
                 for (var i=0; i<randomCount; i++) {
                     let defect: IDefect = {
-                        id: RandomGenerator.getString(5),
-                        title: RandomGenerator.getString(17),
-                        description: RandomGenerator.getString(150),
-                        status: RandomGenerator.getEnum(DefectStatus)
+                        id: RG.getString(5),
+                        title: RG.getString(17),
+                        description: RG.getString(150),
+                        status: RG.getEnum(DefectStatus)
                     } as IDefect;
                     defects.push(defect);
                 }

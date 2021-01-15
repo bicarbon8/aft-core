@@ -1,9 +1,6 @@
 import { TestLog } from "../../src/logging/test-log";
-import { LoggingLevel } from "../../src/logging/logging-level";
-import { RandomGenerator } from "../../src/helpers/random-generator";
+import { RG } from "../../src/helpers/random-generator";
 import { TestResult } from "../../src/integrations/test-cases/test-result";
-import { using } from "../../src/helpers/using";
-import { LogMessage } from "./log-message";
 import { LoggingPluginStore } from "./logging-plugin-store";
 import { ILoggingOptions } from "../../src";
 
@@ -30,7 +27,7 @@ describe('TestLog', () => {
 
         let messages: string[] = [];
         for (var i=0; i<5; i++) {
-            messages.push(RandomGenerator.getString(RandomGenerator.getInt(10, 30)));
+            messages.push(RG.getString(RG.getInt(10, 30)));
         }
 
         for (var i=0; i<messages.length; i++) {
@@ -56,8 +53,8 @@ describe('TestLog', () => {
         let logger: TestLog = new TestLog(opts);
 
         let result: TestResult = new TestResult({
-            testId: 'C' + RandomGenerator.getInt(1000, 999999),
-            resultMessage: RandomGenerator.getString(100)
+            testId: 'C' + RG.getInt(1000, 999999),
+            resultMessage: RG.getString(100)
         });
         
         // wait 0.1 second
@@ -81,7 +78,7 @@ describe('TestLog', () => {
         };
         let logger: TestLog = new TestLog(opts);
 
-        await logger.info(RandomGenerator.getString(18));
+        await logger.info(RG.getString(18));
 
         expect(LoggingPluginStore.finalised).toEqual(false);
 
