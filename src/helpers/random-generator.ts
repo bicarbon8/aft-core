@@ -5,9 +5,8 @@ export module RandomGenerator {
     export var NUMERICS: string = "0123456789";
     export var SPECIALS: string = "!£$%^&*()_+=-[];'#,./{}:@~<>?";
     export var EXTENDED: string = "ÀÁÂÃÄÅĀƁƂÇĈĊĎĐÈÉÊËƑĜĞĠĤĦÌÍÎÏĴĶĹĿŁÑŃÒÓÔÕÖƤɊŔŖŚŜŢŤŦÙÚÛÜŴŶŽ";
-    export var RANDOM_LENGTH: number = -1;
 
-    export function getString(length: number, alphas?: boolean, numerics?: boolean, specials?: boolean, extended?: boolean): string {
+    export function getString(length?: number, alphas?: boolean, numerics?: boolean, specials?: boolean, extended?: boolean): string {
         if (alphas === undefined) { alphas = true; }
         if (numerics === undefined) { numerics = false; }
         if (specials === undefined) { specials = false; }
@@ -29,8 +28,8 @@ export module RandomGenerator {
         return Math.random() * (max - min) + min;
     }
 
-    export function getStringFrom(length: number, selectionCharacters: string): string {
-        if (length <= RandomGenerator.RANDOM_LENGTH) {
+    export function getStringFrom(length?: number, selectionCharacters: string = ALPHAS + NUMERICS + SPECIALS + EXTENDED): string {
+        if (length === undefined) {
             length = RandomGenerator.getInt(1, 101);
         }
         let characters: string = '';

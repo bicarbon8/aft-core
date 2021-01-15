@@ -4,5 +4,5 @@ export interface ITestResultMetaData {
     durationMs?: number;
     statusStr?: string;
     logs?: string;
-    lastError?: string;
+    errors?: string;
 }

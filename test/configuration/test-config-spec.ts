@@ -104,13 +104,23 @@ describe('TestConfig', () => {
                 }
             };
     
-            expect(TestConfig.getFrom(actual, "bar.asd.jkl")).toBe(actual['bar']['asd']['jkl']);
-            expect(TestConfig.getFrom(actual, "foo")).toBe(actual['foo']);
-            expect(TestConfig.getFrom(actual, "bar.baz")).toBe(actual['bar']['baz']);
+            expect(await TestConfig.getFrom(actual, "bar.asd.jkl")).toBe(actual['bar']['asd']['jkl']);
+            expect(await TestConfig.getFrom(actual, "foo")).toBe(actual['foo']);
+            expect(await TestConfig.getFrom(actual, "bar.baz")).toBe(actual['bar']['baz']);
         });
     
         it('will return null if passed in key does not exist', async () => {
+            let actual: object = {
+                foo: RandomGenerator.getString(12),
+                bar: {
+                    baz: RandomGenerator.getInt(9, 99),
+                    asd: {
+                        jkl: RandomGenerator.getGuid()
+                    }
+                }
+            };
 
+            expect(await TestConfig.getFrom(actual, "foo.bar")).toBeNull();
         });
     });
 });

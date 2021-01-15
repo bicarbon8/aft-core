@@ -5,29 +5,35 @@ import { LoggingLevel } from "./logging-level";
 import { PluginLoader } from "../construction/plugin-loader";
 import { ILoggingOptions } from "./ilogging-options";
 import { TestConfig } from "../configuration/test-config";
-import { ITestResultOptions } from "../integrations/test-cases/itest-result-options";
-import { ICloneable } from "../helpers/icloneable";
 import { Convert } from "../helpers/convert";
 import { ISafeStringOption } from "../helpers/isafe-string-option";
 import { Cloner } from "../helpers/cloner";
+import { RandomGenerator } from "../helpers/random-generator";
 
 export class TestLog implements IDisposable {
-    name: string;
-    stepCount: number = 0;
+    private _name: string;
+    private _stepCount: number = 0;
+    private _options: ILoggingOptions;
+    private _level: LoggingLevel;
+    private _plugins: ILoggingPlugin[];
     
-    constructor(name: string, options?: ILoggingOptions) {
+    constructor(options?: ILoggingOptions) {
         this._options = options;
-        this.initName(name);
+        this.initName(this._options?.name || `TestLog_${RandomGenerator.getGuid()}`);
+    }
+
+    name(): string {
+        return this._name;
+    }
+
+    stepCount(): number {
+        return this._stepCount;
     }
 
     initName(name: string): void {
-        let opts: ISafeStringOption[] = ISafeStringOption.defaults;
-        opts.push({exclude: 'function', replaceWith: ''});
-        opts.push({exclude: 'return', replaceWith: ''});
-        this.name = Convert.toSafeString(name, opts);
+        this._name = Convert.toSafeString(name);
     }
 
-    private _options: ILoggingOptions;
     async options(): Promise<ILoggingOptions> {
         if (!this._options) {
             this._options = await TestConfig.get<ILoggingOptions>("logging", null);
@@ -35,18 +41,16 @@ export class TestLog implements IDisposable {
         return this._options;
     }
 
-    private _level: LoggingLevel;
     async level(): Promise<LoggingLevel> {
         if (!this._level) {
-            this._level = LoggingLevel.parse(this._options?.level || LoggingLevel.info.name);
+            this._level = LoggingLevel.parse((await this.options()).level || LoggingLevel.info.name);
         }
         return this._level;
     }
 
-    private _plugins: ILoggingPlugin[];
     async plugins(): Promise<ILoggingPlugin[]> {
         if (!this._plugins) {
-            let names: string[] = this._options?.pluginNames || [];
+            let names: string[] = (await this.options()).pluginNames || [];
             this._plugins = await PluginLoader.load<ILoggingPlugin>(...names);
         }
         return this._plugins;
@@ -65,7 +69,7 @@ export class TestLog implements IDisposable {
     }
 
     async step(message: string): Promise<void> {
-        await this.log(LoggingLevel.step, ++this.stepCount + ': ' + message);
+        await this.log(LoggingLevel.step, ++this._stepCount + ': ' + message);
     }
 
     async warn(message: string): Promise<void> {
@@ -87,7 +91,7 @@ export class TestLog implements IDisposable {
     async log(level: LoggingLevel, message: string): Promise<void> {
         let l: LoggingLevel = await this.level();
         if (level.value >= l.value && level != LoggingLevel.none) {
-            console.log(TestLog.format(this.name, level, message));
+            console.log(TestLog.format(this.name(), level, message));
         }
         
         let plugins: ILoggingPlugin[] = await this.plugins();
@@ -99,7 +103,7 @@ export class TestLog implements IDisposable {
                     await p.log(level, message);
                 }
             } catch (e) {
-                console.log(TestLog.format(this.name, LoggingLevel.warn, "unable to send log message to '" + p.name + "' plugin due to: " + e));
+                console.log(TestLog.format(this.name(), LoggingLevel.warn, "unable to send log message to '" + p.name + "' plugin due to: " + e));
             }
         }
     }
@@ -116,7 +120,7 @@ export class TestLog implements IDisposable {
                         await p.logResult(r);
                     }
                 } catch (e) {
-                    console.log(TestLog.format(this.name, LoggingLevel.warn, 
+                    console.log(TestLog.format(this._name, LoggingLevel.warn, 
                         `unable to send result to '${p.name || 'unknown'}' plugin due to: ${e}`));
                 }
             }
@@ -133,30 +137,15 @@ export class TestLog implements IDisposable {
                     await plugins[i].finalise();
                 }
             } catch (e) {
-                console.log(TestLog.format(this.name, LoggingLevel.warn, `unable to call finalise on ${p.name} due to: ${e}`))
+                console.log(TestLog.format(this.name(), LoggingLevel.warn, `unable to call finalise on ${p.name} due to: ${e}`))
             }
         }
     }
 }
 
 export module TestLog {
-    var _globalLogger: TestLog;
-
     export function format(name: string, level: LoggingLevel, message: string) {
         let d: string = new Date().toLocaleTimeString();
         return d + ' ' + level.logString + '[' + name + '] ' + message;
-    }
-
-    /**
-     * a global static TestLog object that does NOT load any logging
-     * plugins and is set to a LoggingLevel of 'trace'. this is intended
-     * for use by systems internal to AFT and not by functional tests
-     * @param message the message to be logged in the global static logger
-     */
-    export async function log(level: LoggingLevel, message: string): Promise<void> {
-        if (!_globalLogger) {
-            _globalLogger = new TestLog('TestLog', {level: LoggingLevel.trace.name, pluginNames: []});
-        }
-        await _globalLogger.log(level, message);
     }
 }

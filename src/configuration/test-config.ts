@@ -3,10 +3,17 @@ import * as path from 'path';
 import { TestLog } from '../logging/test-log';
 import { LoggingLevel } from '../logging/logging-level';
 import { IProcessingResult } from '../helpers/iprocessing-result';
-import { rejects } from 'assert';
 
 export module TestConfig {
     var _aftConfig: object;
+    var _testLog: TestLog;
+
+    function _logger(): TestLog {
+        if (!_testLog) {
+            _testLog = new TestLog({name: 'TestConfig', pluginNames: []});
+        }
+        return _testLog;
+    }
 
     /**
      * loads the specified file and attempts to return it as the declared type
@@ -46,7 +53,11 @@ export module TestConfig {
             if (!currentDir.endsWith('/') && !currentDir.endsWith('\\')) {
                 currentDir += path.sep;
             }
-            _aftConfig = await loadJsonFile<object>(currentDir + 'aftconfig.json') || {};
+            _aftConfig = await loadJsonFile<object>(currentDir + 'aftconfig.json')
+                .catch(async (err) => {
+                    await _logger().warn(err);
+                    return {}; // empty config
+                });
         }
         return _aftConfig;
     }
@@ -62,7 +73,7 @@ export module TestConfig {
      */
     export async function get<T>(keys: string, defaultVal?: T): Promise<T> {
         let conf: object = await aftConfig();
-        let val: any = getFrom(conf, keys)
+        let val: any = await getFrom(conf, keys)
         
         return val || defaultVal as T;
     }
@@ -76,7 +87,7 @@ export module TestConfig {
      * @param obj the object to search for values within
      * @param keys the keys to be used in looking up values separated by the . character
      */
-    export function getFrom(obj: any, keys: string): any {
+    export async function getFrom(obj: any, keys: string): Promise<any> {
         let result: any = null;
         let keysArray: string[] = keys.split('.');
         let currentKey: string = keysArray.shift();
@@ -84,20 +95,20 @@ export module TestConfig {
         if (currentKey.length > 0) {
             switch(typeof obj) {
                 case "object":
-                    result = getFrom(obj[currentKey], keysArray.join('.'));
+                    result = await getFrom(obj[currentKey], keysArray.join('.'));
                     break;
                 case "string":
                     let envRes: IProcessingResult = isEnvVar(obj);
                     if (envRes.success) {
                         let jsonRes: IProcessingResult = isJsonString(envRes.obj);
                         if (jsonRes.success) {
-                            result = getFrom(jsonRes.obj, keys);
+                            result = await getFrom(jsonRes.obj, keys);
                             break;
                         }
                     }
                 default:
                     result = null;
-                    TestLog.log(LoggingLevel.trace, `invalid Argument: ${obj}, Type: ${typeof obj} passed to getValueFromObj}`);
+                    await _logger().log(LoggingLevel.trace, `invalid Argument: ${obj}, Type: ${typeof obj} passed to getFrom}`);
                     break;
             }
         } else {

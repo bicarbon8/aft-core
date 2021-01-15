@@ -11,7 +11,7 @@ export class TestCaseManager {
 
     constructor(options?: ITestCaseManagerOptions) {
         this._pluginName = options?.pluginName;
-        this._logger = options?.logger || new TestLog('TestCaseManager');
+        this._logger = options?.logger || new TestLog({name: 'TestCaseManager', pluginNames: []});
     }
 
     async getTestCase(testId: string): Promise<ITestCase> {

@@ -10,7 +10,7 @@ export class DefectManager {
     
     constructor(options?: IDefectManagerOptions) {
         this._pluginName = options?.pluginName;
-        this._logger = options?.logger || new TestLog('DefectManager');
+        this._logger = options?.logger || new TestLog({name: 'DefectManager', pluginNames: []});
     }
 
     async getDefect(defectId: string): Promise<IDefect> {

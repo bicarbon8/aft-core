@@ -5,8 +5,8 @@ export interface ISafeStringOption {
 
 export module ISafeStringOption {
     export const defaults: ISafeStringOption[] = [
-        {exclude: /[\/\\\{\}\(\)]/g, replaceWith: '_'},
+        {exclude: /[\/\\\{\}\(\)\,\.\-]/g, replaceWith: '_'},
         {exclude: /[\s]+/g, replaceWith: '_'},
-        {exclude: /[\$\^\&\*\%\£\€\~\#\@\!\|\?\'\"\:\;\.\=\+\-]/g, replaceWith: ''}
+        {exclude: /[\$\^\&\*\%\£\€\~\#\@\!\|\?\'\"\:\;\=\+\[\]]/g, replaceWith: ''}
     ];
 }

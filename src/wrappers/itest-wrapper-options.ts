@@ -8,5 +8,5 @@ export interface ITestWrapperOptions {
     logger?: TestLog;
     testCases?: string[];
     testCaseManager?: TestCaseManager;
-    because?: string;
+    description?: string;
 }
