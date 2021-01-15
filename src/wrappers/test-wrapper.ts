@@ -34,6 +34,31 @@ export class TestWrapper {
     private _testCaseManager: TestCaseManager = null;
     private _defectManager: DefectManager = null;
 
+    /**
+     * this class is intended to be utilised via the `should(expectation, options)` function
+     * and not directly...
+     * @param expectation a function containing some expectation like `expect(true).toBeFalsy()` or
+     * `'foo' == 'foo'` where the function either accepts no arguments or one argument of type `TestWrapper`
+     * ex:
+     * ```
+     * let tw: TestWrapper = new TestWrapper((t) => {
+     *     await t.logger().info("using the TestWrapper's logger");
+     *     let foo = 'foo';
+     *     return foo == 'foo';
+     * });
+     * await tw.run();
+     * ```
+     * @param options optional `ITestWrapperOptions` allowing test IDs, defect IDs and a `description` to be passed in
+     */
+    constructor(expectation: Func<TestWrapper, any>, options?: ITestWrapperOptions) {
+        this._expectation = expectation;
+        
+        this._initialiseName(options);
+        this._initialiseLogger(options);
+        this._initialiseTestCases(options);
+        this._initialiseDefects(options);
+    }
+
     expectation(): Func<TestWrapper, any> {
         return this._expectation;
     }
@@ -67,25 +92,14 @@ export class TestWrapper {
     }
     
     /**
-     * function is intended to be utilised via the `should(expectation, options)` function
-     * and not directly
-     * @param expectation an expectation like `expect(true).toBeFalsy()` or some function returning `true` to be run
-     * @param options optional ITestWrapperOptions allowing test IDs, defect IDs and a `description` to be passed in
+     * checks if the expectation should be executed and if so runs it
+     * and returns the result via an `IProcessingResult`
      */
-    async run(expectation: Func<TestWrapper, any>, options?: ITestWrapperOptions): Promise<IProcessingResult> {
-        this._expectation = expectation;
-        
-        this._initialiseName(options);
-        this._initialiseLogger(options);
-        this._initialiseTestCases(options);
-        this._initialiseDefects(options);
-
+    async run(): Promise<IProcessingResult> {
         this._startTime = new Date().getTime();
         
         let result: IProcessingResult = await this._beginProcessing();
         await this._logResult(result);
-
-        await this._finaliseLogger();
 
         return result;
     }
@@ -148,6 +162,8 @@ export class TestWrapper {
                 await this.logger().warn(`unable to log test result for test '${result.testId || result.resultId}' due to: ${e}`);
             }
         }
+
+        this.logger().finalise();
     }
 
     private async _logMessage(status: TestStatus, message: string): Promise<void> {
@@ -177,7 +193,7 @@ export class TestWrapper {
         let status: TestStatus = TestStatus.Untested;
         let message: string;
         if (this._expectation) {
-            let shouldRun: IProcessingResult = await this.shouldRun();
+            let shouldRun: IProcessingResult = await this._shouldRun();
             if (shouldRun.success) {
                 try {
                     let result = await Promise.resolve(this._expectation(this));
@@ -203,19 +219,19 @@ export class TestWrapper {
         return {obj: status, message: message, success: status == TestStatus.Passed};
     }
 
-    private async shouldRun(): Promise<IProcessingResult> {
-        let tcShouldRun: IProcessingResult = await this.shouldRun_tests();
+    private async _shouldRun(): Promise<IProcessingResult> {
+        let tcShouldRun: IProcessingResult = await this._shouldRun_tests();
         if (!tcShouldRun.success) {
             return tcShouldRun;
         }
-        let dShouldRun: IProcessingResult = await this.shouldRun_defects();
+        let dShouldRun: IProcessingResult = await this._shouldRun_defects();
         if (!dShouldRun.success) {
             return dShouldRun;
         }
         return {success: true};
     }
 
-    private async shouldRun_tests(): Promise<IProcessingResult> {
+    private async _shouldRun_tests(): Promise<IProcessingResult> {
         let shouldRun: boolean = false;
         let reasons: string[] = [];
         if (this._testCases.length > 0) {
@@ -230,7 +246,7 @@ export class TestWrapper {
         return {success: true};
     }
 
-    private async shouldRun_defects(): Promise<IProcessingResult> {
+    private async _shouldRun_defects(): Promise<IProcessingResult> {
         if (this._testCases.length > 0) {
             for (var i=0; i<this._testCases.length; i++) {
                 let testId: string = this._testCases[i];
@@ -251,17 +267,17 @@ export class TestWrapper {
         if (testIds.length > 0) {
             for (var i=0; i<testIds.length; i++) {
                 let testId: string = testIds[i];
-                let result: TestResult = this.generateTestResult(status, logMessage, testId);
+                let result: TestResult = this._generateTestResult(status, logMessage, testId);
                 results.push(result);
             }
         } else {
-            let result: TestResult = this.generateTestResult(status, logMessage);
+            let result: TestResult = this._generateTestResult(status, logMessage);
             results.push(result);
         }
         return results;
     }
 
-    private generateTestResult(status: TestStatus, logMessage: string, testId?: string): TestResult {
+    private _generateTestResult(status: TestStatus, logMessage: string, testId?: string): TestResult {
         let result: TestResult = new TestResult({
             testId: testId,
             resultMessage: logMessage.ellide(100),
@@ -276,9 +292,5 @@ export class TestWrapper {
             result.metadata.errors = exceptionsStr;
         }
         return result;
-    }
-
-    async _finaliseLogger(error?: Error) {
-        await this.logger().dispose(error);
     }
 }

@@ -11,10 +11,10 @@ import { TestWrapper } from "./test-wrapper";
  * await should(() => expect('foo').toBe('foo'));
  * await should((tw) => tw.logger().warn('foo'); expect('foo').not.toBe('bar'));
  * ```
- * @param expectation a test expectation like Jasmine `expect` or Chai `expect`
+ * @param expectation a function containing a test expectation like Jasmine `expect` or Chai `expect`
  * @param options an optional `ITestWrapperOptions` object containing additional options
  */
 export const should = async function(expectation: Func<TestWrapper, any>, options?: ITestWrapperOptions): Promise<IProcessingResult> {
-    let t: TestWrapper = new TestWrapper();
-    return await t.run(expectation, options);
+    let t: TestWrapper = new TestWrapper(expectation, options);
+    return await t.run();
 }

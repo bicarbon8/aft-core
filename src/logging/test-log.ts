@@ -1,16 +1,14 @@
 import { TestResult } from "../integrations/test-cases/test-result";
 import { ILoggingPlugin } from "./plugins/ilogging-plugin";
-import { IDisposable } from "../helpers/idisposable";
 import { LoggingLevel } from "./logging-level";
 import { PluginLoader } from "../construction/plugin-loader";
 import { ILoggingOptions } from "./ilogging-options";
 import { TestConfig } from "../configuration/test-config";
 import { Convert } from "../helpers/convert";
-import { ISafeStringOption } from "../helpers/isafe-string-option";
 import { Cloner } from "../helpers/cloner";
 import { RandomGenerator } from "../helpers/random-generator";
 
-export class TestLog implements IDisposable {
+export class TestLog {
     private _name: string;
     private _stepCount: number = 0;
     private _options: ILoggingOptions;
@@ -127,7 +125,7 @@ export class TestLog implements IDisposable {
         }
     }
 
-    async dispose(error?: Error): Promise<void> {
+    async finalise(): Promise<void> {
         let plugins: ILoggingPlugin[] = await this.plugins();
         for (var i=0; i<plugins.length; i++) {
             let p: ILoggingPlugin = plugins[i];

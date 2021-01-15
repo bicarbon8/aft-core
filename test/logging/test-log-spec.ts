@@ -74,9 +74,9 @@ describe('TestLog', () => {
         expect(LoggingPluginStore.results[0].created).toEqual(result.created);
     });
 
-    it('calls ILoggingPlugin.finalise on TestLog.dispose', async () => {
+    it('calls ILoggingPlugin.finalise on TestLog.finalise', async () => {
         let opts: ILoggingOptions = {
-            name: 'calls ILoggingPlugin.finalise on TestLog.dispose',
+            name: 'calls ILoggingPlugin.finalise on TestLog.finalise',
             pluginNames: ['./dist/test/logging/fake-logger']
         };
         let logger: TestLog = new TestLog(opts);
@@ -85,26 +85,8 @@ describe('TestLog', () => {
 
         expect(LoggingPluginStore.finalised).toEqual(false);
 
-        await logger.dispose();
+        await logger.finalise();
 
-        expect(LoggingPluginStore.finalised).toEqual(true);
-    });
-
-    it('implements IDisposable', async () => {
-        let opts: ILoggingOptions = {
-            name: 'implements IDisposable',
-            pluginNames: ['./dist/test/logging/fake-logger']
-        };
-        let message = RandomGenerator.getString(30);
-
-        await using(new TestLog(opts), async (logger) => {
-            await logger.info(message);
-        });
-
-        let actual: LogMessage = LoggingPluginStore.logs[0];
-        expect(actual).toBeDefined();
-        expect(actual.level).toEqual(LoggingLevel.info);
-        expect(actual.message).toEqual(message);
         expect(LoggingPluginStore.finalised).toEqual(true);
     });
 });
