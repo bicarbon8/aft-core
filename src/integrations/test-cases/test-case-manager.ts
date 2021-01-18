@@ -8,6 +8,7 @@ import { ITestCaseHandlerPlugin } from "./plugins/itest-case-handler-plugin";
 
 export class TestCaseManager {
     private _logger: TestLog;
+    private _pluginName: string = null;
 
     constructor(options?: ITestCaseManagerOptions) {
         this._pluginName = options?.pluginName;
@@ -53,7 +54,6 @@ export class TestCaseManager {
         });
     }
 
-    private _pluginName: string = null;
     async pluginName(): Promise<string> {
         if (this._pluginName === null) {
             this._pluginName = await TestConfig.get<string>('testCaseManager.pluginName');
