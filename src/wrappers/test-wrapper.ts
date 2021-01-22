@@ -247,14 +247,25 @@ export class TestWrapper {
     }
 
     private async _shouldRun_defects(): Promise<IProcessingResult> {
+        // first search for any specified Defects by ID
+        if (this._defects.length > 0) {
+            for (var i=0; i<this._defects.length; i++) {
+                let defectId: string = this._defects[i];
+                let defect: IDefect = await this._defectManager.getDefect(defectId);
+                if (defect?.status == DefectStatus.open) {
+                    return {success: false, message: `Defect: '${defectId}' is open so test should not be run.`};
+                }
+            }
+        }
+        // next search for any defects referencing the specified Test ID's
         if (this._testCases.length > 0) {
             for (var i=0; i<this._testCases.length; i++) {
                 let testId: string = this._testCases[i];
                 let defects: IDefect[] = await this._defectManager.findDefects(testId) || [];
                 for (var j=0; j<defects.length; j++) {
                     let d: IDefect = defects[j];
-                    if (d.status == DefectStatus.open) {
-                        return {success: false, message: `TestId: '${testId}' has open defect '${d.id}' so it should not be run.`};
+                    if (d?.status == DefectStatus.open) {
+                        return {success: false, message: `TestId: '${testId}' has open defect '${d.id}' so test should not be run.`};
                     }
                 }
             }

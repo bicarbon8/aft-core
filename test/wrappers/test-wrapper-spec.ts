@@ -107,8 +107,8 @@ describe('TestWrapper', () => {
     it('will run if only some tests should not be run', async () => {
         let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345'], testCaseManager: new TestCaseManager()};
         let notExpected: boolean = false;
-        let tw: TestWrapper = await new TestWrapper(() => notExpected = true, options);
-        let spy = spyOn(options.testCaseManager, 'shouldRun').and.callFake(async (testId: string): Promise<IProcessingResult> => {
+        let tw: TestWrapper = new TestWrapper(() => notExpected = true, options);
+        spyOn(options.testCaseManager, 'shouldRun').and.callFake(async (testId: string): Promise<IProcessingResult> => {
             if (testId == 'C1234') {
                 return {success: false, message: `testId '${testId}' should not be run`};
             } else {
@@ -123,11 +123,52 @@ describe('TestWrapper', () => {
         expect(notExpected).toBeTruthy();
     });
 
+    it('will skip execution if any specified defect is open', async () => {
+        let options: ITestWrapperOptions = {defects: ['AUTO-123', 'AUTO-222'], defectManager: new DefectManager()};
+        let notExpected: boolean = false;
+        let tw: TestWrapper = new TestWrapper(() => notExpected = true, options);
+        spyOn(options.defectManager, 'getDefect').and.callFake(async (defectId: string): Promise<IDefect> => {
+            let d: IDefect = {id: defectId, title: `[${defectId}] fake defect title`} as IDefect;
+            if (defectId == 'AUTO-123') {
+                d.status = DefectStatus.open;
+            } else {
+                d.status = DefectStatus.closed;
+            }
+            return d;
+        });
+        spyOn(options.defectManager, 'findDefects').and.callThrough();
+
+        await tw.run();
+
+        expect(options.defectManager.getDefect).toHaveBeenCalledWith('AUTO-123');
+        expect(options.defectManager.getDefect).not.toHaveBeenCalledWith('AUTO-222');
+        expect(options.defectManager.findDefects).not.toHaveBeenCalled();
+        expect(notExpected).toBeFalsy();
+    });
+
+    it('will run expectation if all defects are closed', async () => {
+        let options: ITestWrapperOptions = {defects: ['AUTO-123', 'AUTO-222'], defectManager: new DefectManager()};
+        let notExpected: boolean = false;
+        let tw: TestWrapper = new TestWrapper(() => notExpected = true, options);
+        spyOn(options.defectManager, 'getDefect').and.callFake(async (defectId: string): Promise<IDefect> => {
+            let d: IDefect = {id: defectId, title: `[${defectId}] fake defect title`, status: DefectStatus.closed} as IDefect;
+            return d;
+        });
+        spyOn(options.defectManager, 'findDefects').and.callThrough();
+
+        await tw.run();
+
+        expect(options.defectManager.getDefect).toHaveBeenCalledWith('AUTO-123');
+        expect(options.defectManager.getDefect).toHaveBeenCalledWith('AUTO-222');
+        expect(options.defectManager.findDefects).not.toHaveBeenCalled();
+        expect(notExpected).toBeTruthy();
+    });
+
     it('will skip execution if any open defect is found referencing testIds', async () => {
         let options: ITestWrapperOptions = {testCases: ['C1234', 'C2345'], defectManager: new DefectManager()};
         let notExpected: boolean = false;
-        let tw: TestWrapper = await new TestWrapper(() => notExpected = true, options);
-        let spy = spyOn(options.defectManager, 'findDefects').and.callFake(async (searchTerm: string): Promise<IDefect[]> => {
+        let tw: TestWrapper = new TestWrapper(() => notExpected = true, options);
+        spyOn(options.defectManager, 'findDefects').and.callFake(async (searchTerm: string): Promise<IDefect[]> => {
             let defects: IDefect[] = [
                 {id: 'AUTO-123', title: `[${searchTerm}] fake defect title`, status: DefectStatus.closed} as IDefect,
                 {id: 'AUTO-124', title: `[${searchTerm}] fake defect title`, status: DefectStatus.open} as IDefect,
