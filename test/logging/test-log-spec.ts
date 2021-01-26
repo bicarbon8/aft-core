@@ -1,8 +1,8 @@
 import { TestLog } from "../../src/logging/test-log";
 import { RG } from "../../src/helpers/random-generator";
-import { TestResult } from "../../src/integrations/test-cases/test-result";
+import { ITestResult } from "../../src/integrations/test-cases/itest-result";
 import { LoggingPluginStore } from "./logging-plugin-store";
-import { ILoggingOptions } from "../../src";
+import { LoggingOptions, TestStatus } from "../../src";
 
 let consoleLog = console.log;
 describe('TestLog', () => {
@@ -19,7 +19,7 @@ describe('TestLog', () => {
     });
 
     it('will send logs to any registered ILoggingPlugin implementations', async () => {
-        let opts: ILoggingOptions = {
+        let opts: LoggingOptions = {
             name: 'will send logs to any registered ILoggingPlugin implementations',
             pluginNames: ['./dist/test/logging/fake-logger']
         };
@@ -46,16 +46,19 @@ describe('TestLog', () => {
     });
 
     it('will send cloned TestResult to any registered ILoggingPlugin implementations', async () => {
-        let opts: ILoggingOptions = {
+        let opts: LoggingOptions = {
             name: 'will send cloned TestResult to any registered ILoggingPlugin implementations',
             pluginNames: ['./dist/test/logging/fake-logger']
         };
         let logger: TestLog = new TestLog(opts);
 
-        let result: TestResult = new TestResult({
+        let result: ITestResult = {
             testId: 'C' + RG.getInt(1000, 999999),
+            created: new Date(),
+            resultId: RG.getGuid(),
+            status: TestStatus.Untested,
             resultMessage: RG.getString(100)
-        });
+        };
         
         // wait 0.1 second
         await new Promise((resolve, reject) => {
@@ -72,7 +75,7 @@ describe('TestLog', () => {
     });
 
     it('calls ILoggingPlugin.finalise on TestLog.finalise', async () => {
-        let opts: ILoggingOptions = {
+        let opts: LoggingOptions = {
             name: 'calls ILoggingPlugin.finalise on TestLog.finalise',
             pluginNames: ['./dist/test/logging/fake-logger']
         };

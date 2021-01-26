@@ -1,6 +1,6 @@
 import { Func } from "../helpers/func";
-import { IProcessingResult } from "../helpers/iprocessing-result";
-import { ITestWrapperOptions } from "./itest-wrapper-options";
+import { ProcessingResult } from "../helpers/processing-result";
+import { TestWrapperOptions } from "./test-wrapper-options";
 import { TestWrapper } from "./test-wrapper";
 
 /**
@@ -14,7 +14,7 @@ import { TestWrapper } from "./test-wrapper";
  * @param expectation a function containing a test expectation like Jasmine `expect` or Chai `expect`
  * @param options an optional `ITestWrapperOptions` object containing additional options
  */
-export const should = async function(expectation: Func<TestWrapper, any>, options?: ITestWrapperOptions): Promise<IProcessingResult> {
+export const should = async function(expectation: Func<TestWrapper, any>, options?: TestWrapperOptions): Promise<ProcessingResult> {
     let t: TestWrapper = new TestWrapper(expectation, options);
     return await t.run();
 }

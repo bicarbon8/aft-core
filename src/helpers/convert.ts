@@ -1,4 +1,4 @@
-import { ISafeStringOption } from "./isafe-string-option";
+import { SafeStringOption } from "./safe-string-option";
 
 export module Convert {
     /**
@@ -34,9 +34,9 @@ export module Convert {
      * @param options an array of {exclude: string | RegExp, replaceWith: string} objects to 
      * use in processing the input string
      */
-    export function toSafeString(input: string, options: ISafeStringOption[] = ISafeStringOption.defaults): string {
+    export function toSafeString(input: string, options: SafeStringOption[] = SafeStringOption.defaults): string {
         for (var i=0; i<options.length; i++) {
-            let o: ISafeStringOption = options[i];
+            let o: SafeStringOption = options[i];
             input = input.replace(o.exclude, o.replaceWith);
         }
         return input;

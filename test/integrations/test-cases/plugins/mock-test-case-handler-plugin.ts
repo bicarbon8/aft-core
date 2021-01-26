@@ -1,9 +1,12 @@
-import { IProcessingResult, RG, TestStatus, ITestCase, ITestCaseHandlerPlugin } from "../../../../src";
+import { ProcessingResult, RG, TestStatus, ITestCase, ITestCaseHandlerPlugin } from "../../../../src";
 
 export class MockTestCaseHandlerPlugin implements ITestCaseHandlerPlugin {
     name: string = 'mock-test-case-handler-plugin';
-    async enabled(): Promise<boolean> {
+    async isEnabled(): Promise<boolean> {
         return true;
+    }
+    async onLoad(): Promise<void> {
+        
     }
     async getTestCase(testId: string): Promise<ITestCase> {
         return {
@@ -27,7 +30,7 @@ export class MockTestCaseHandlerPlugin implements ITestCaseHandlerPlugin {
         }
         return cases;
     }
-    async shouldRun(testId: string): Promise<IProcessingResult> {
+    async shouldRun(testId: string): Promise<ProcessingResult> {
         switch(testId) {
             case 'C1234':
                 let c1: ITestCase = await this.getTestCase(testId);

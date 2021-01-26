@@ -9,11 +9,11 @@ describe('Sample Test', () => {
         /**
          * the `should(expectation, options)` function
          * checks any specified `ITestCaseHandlerPlugin`
-         * implementations to ensure the test should
-         * be run. It will then report to any
-         * `ILoggingPlugin` implementations with a 
-         * `TestResult` indicating the success, failure
-         * or skipped status
+         * and `IDefectHandlerPlugin` implementations
+         * to ensure the test should be run. It will then
+         * report to any `ILoggingPlugin` implementations
+         * with a `TestResult` indicating the success,
+         * failure or skipped status
          */
         await should(() => expect(feature.performAction()).toBe('result of action'), 
         {

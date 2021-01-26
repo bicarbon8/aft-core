@@ -1,17 +1,18 @@
 import { TestLog } from "../logging/test-log";
 import { Func } from "../helpers/func";
-import { ITestWrapperOptions } from "./itest-wrapper-options";
+import { TestWrapperOptions } from "./test-wrapper-options";
 import { TestStatus } from "../integrations/test-cases/test-status";
-import { TestResult } from "../integrations/test-cases/test-result";
+import { ITestResult } from "../integrations/test-cases/itest-result";
 import '../extensions/string-extensions';
 import '../extensions/set-extensions';
 import { Convert } from "../helpers/convert";
-import { IProcessingResult } from "../helpers/iprocessing-result";
-import { TestCaseManager } from "../integrations/test-cases/test-case-manager";
+import { ProcessingResult } from "../helpers/processing-result";
+import { TestCasePluginManager } from "../integrations/test-cases/test-case-plugin-manager";
 import { IDefect } from "../integrations/defects/idefect";
-import { DefectManager } from "../integrations/defects/defect-manager";
+import { DefectPluginManager } from "../integrations/defects/defect-plugin-manager";
 import { DefectStatus } from "../integrations/defects/defect-status";
-import { RandomGenerator } from "../helpers/random-generator";
+import { RandomGenerator, RG } from "../helpers/random-generator";
+import { BuildInfo } from "../helpers/build-info";
 
 /**
  * provides pre-test execution filtering based on specified 
@@ -31,8 +32,8 @@ export class TestWrapper {
     private _errors: string[] = [];
     private _startTime: number;
     private _loggedCases: string[] = [];
-    private _testCaseManager: TestCaseManager = null;
-    private _defectManager: DefectManager = null;
+    private _testCaseManager: TestCasePluginManager = null;
+    private _defectManager: DefectPluginManager = null;
 
     /**
      * this class is intended to be utilised via the `should(expectation, options)` function
@@ -50,7 +51,7 @@ export class TestWrapper {
      * ```
      * @param options optional `ITestWrapperOptions` allowing test IDs, defect IDs and a `description` to be passed in
      */
-    constructor(expectation: Func<TestWrapper, any>, options?: ITestWrapperOptions) {
+    constructor(expectation: Func<TestWrapper, any>, options?: TestWrapperOptions) {
         this._expectation = expectation;
         
         this._initialiseName(options);
@@ -95,16 +96,16 @@ export class TestWrapper {
      * checks if the expectation should be executed and if so runs it
      * and returns the result via an `IProcessingResult`
      */
-    async run(): Promise<IProcessingResult> {
+    async run(): Promise<ProcessingResult> {
         this._startTime = new Date().getTime();
         
-        let result: IProcessingResult = await this._beginProcessing();
+        let result: ProcessingResult = await this._beginProcessing();
         await this._logResult(result);
 
         return result;
     }
 
-    private _initialiseName(options?: ITestWrapperOptions): void {
+    private _initialiseName(options?: TestWrapperOptions): void {
         this._description = options?.description;
         if (!this._description && options?.testCases?.length > 0) {
             this._description = `Tests [${options?.testCases?.join(',')}]`
@@ -114,19 +115,19 @@ export class TestWrapper {
         }
     }
 
-    private _initialiseLogger(options?: ITestWrapperOptions): void {
+    private _initialiseLogger(options?: TestWrapperOptions): void {
         this._logger = options?.logger || new TestLog({name: this.description()});
     }
 
-    private _initialiseTestCases(options?: ITestWrapperOptions) {
-        this._testCaseManager = options?.testCaseManager || TestCaseManager.instance();
+    private _initialiseTestCases(options?: TestWrapperOptions) {
+        this._testCaseManager = options?.testCasePluginManager || TestCasePluginManager.instance();
         options?.testCases?.forEach(c => {
             this.testCases().push(c);
         });
     }
 
-    private _initialiseDefects(options?: ITestWrapperOptions) {
-        this._defectManager = options?.defectManager || DefectManager.instance();
+    private _initialiseDefects(options?: TestWrapperOptions) {
+        this._defectManager = options?.defectPluginManager || DefectPluginManager.instance();
         options?.defects?.forEach(d => {
             this.defects().push(d);
         });
@@ -138,7 +139,7 @@ export class TestWrapper {
      * @param result an `IProcessingResult` returned from executing the 
      * expectation
      */
-    private async _logResult(result: IProcessingResult): Promise<void> {
+    private async _logResult(result: ProcessingResult): Promise<void> {
         let status: TestStatus = result.obj as TestStatus || TestStatus.Untested;
         let message: string = `${TestStatus[status]} - ${result.message || ''}`;
         if (this.testCases().length > 0) {
@@ -150,9 +151,9 @@ export class TestWrapper {
             await this._logMessage(status, message);
         }
 
-        let results: TestResult[] = this._generateTestResults(status, message, ...this.testCases());
+        let results: ITestResult[] = await this._generateTestResults(status, message, ...this.testCases());
         for (var i=0; i<results.length; i++) {
-            let result: TestResult = results[i];
+            let result: ITestResult = results[i];
             try {
                 await this.logger().logResult(result);
                 if (result.testId) {
@@ -189,11 +190,11 @@ export class TestWrapper {
      * expectation should be executed and returns a result
      * based on execution or why it should not be run
      */
-    private async _beginProcessing(): Promise<IProcessingResult> {
+    private async _beginProcessing(): Promise<ProcessingResult> {
         let status: TestStatus = TestStatus.Untested;
         let message: string;
         if (this._expectation) {
-            let shouldRun: IProcessingResult = await this._shouldRun();
+            let shouldRun: ProcessingResult = await this._shouldRun();
             if (shouldRun.success) {
                 try {
                     let result = await Promise.resolve(this._expectation(this));
@@ -219,25 +220,25 @@ export class TestWrapper {
         return {obj: status, message: message, success: status == TestStatus.Passed};
     }
 
-    private async _shouldRun(): Promise<IProcessingResult> {
-        let tcShouldRun: IProcessingResult = await this._shouldRun_tests();
+    private async _shouldRun(): Promise<ProcessingResult> {
+        let tcShouldRun: ProcessingResult = await this._shouldRun_tests();
         if (!tcShouldRun.success) {
             return tcShouldRun;
         }
-        let dShouldRun: IProcessingResult = await this._shouldRun_defects();
+        let dShouldRun: ProcessingResult = await this._shouldRun_defects();
         if (!dShouldRun.success) {
             return dShouldRun;
         }
         return {success: true};
     }
 
-    private async _shouldRun_tests(): Promise<IProcessingResult> {
+    private async _shouldRun_tests(): Promise<ProcessingResult> {
         let shouldRun: boolean = false;
         let reasons: string[] = [];
         if (this._testCases.length > 0) {
             for (var i=0; i<this._testCases.length; i++) {
                 let testId: string = this._testCases[i];
-                let tcShouldRun: IProcessingResult = await this._testCaseManager.shouldRun(testId);
+                let tcShouldRun: ProcessingResult = await this._testCaseManager.shouldRun(testId);
                 shouldRun = shouldRun || tcShouldRun.success;
                 reasons.push(tcShouldRun.message);
             }
@@ -246,7 +247,7 @@ export class TestWrapper {
         return {success: true};
     }
 
-    private async _shouldRun_defects(): Promise<IProcessingResult> {
+    private async _shouldRun_defects(): Promise<ProcessingResult> {
         // first search for any specified Defects by ID
         if (this._defects.length > 0) {
             for (var i=0; i<this._defects.length; i++) {
@@ -273,34 +274,38 @@ export class TestWrapper {
         return {success: true};
     }
 
-    private _generateTestResults(status: TestStatus, logMessage: string, ...testIds: string[]): TestResult[] {
-        let results: TestResult[] = [];
+    private async _generateTestResults(status: TestStatus, logMessage: string, ...testIds: string[]): Promise<ITestResult[]> {
+        let results: ITestResult[] = [];
         if (testIds.length > 0) {
             for (var i=0; i<testIds.length; i++) {
                 let testId: string = testIds[i];
-                let result: TestResult = this._generateTestResult(status, logMessage, testId);
+                let result: ITestResult = await this._generateTestResult(status, logMessage, testId);
                 results.push(result);
             }
         } else {
-            let result: TestResult = this._generateTestResult(status, logMessage);
+            let result: ITestResult = await this._generateTestResult(status, logMessage);
             results.push(result);
         }
         return results;
     }
 
-    private _generateTestResult(status: TestStatus, logMessage: string, testId?: string): TestResult {
-        let result: TestResult = new TestResult({
+    private async _generateTestResult(status: TestStatus, logMessage: string, testId?: string): Promise<ITestResult> {
+        let result: ITestResult = {
             testId: testId,
+            created: new Date(),
+            resultId: RG.getGuid(),
             resultMessage: logMessage.ellide(100),
             status: status,
             metadata: {
                 durationMs: Convert.toElapsedMs(this._startTime),
-                statusStr: TestStatus[status]
+                statusStr: TestStatus[status],
+                buildName: await BuildInfo.name() || 'unknown',
+                buildNumber: await BuildInfo.number() || 'unknown'
             }
-        });
+        };
         if (this.errors().length > 0) {
             let exceptionsStr: string = this.errors().join('\n');
-            result.metadata.errors = exceptionsStr;
+            result.metadata['errors'] = exceptionsStr;
         }
         return result;
     }

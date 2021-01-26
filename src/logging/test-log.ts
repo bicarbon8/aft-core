@@ -1,8 +1,8 @@
-import { TestResult } from "../integrations/test-cases/test-result";
+import { ITestResult } from "../integrations/test-cases/itest-result";
 import { ILoggingPlugin } from "./plugins/ilogging-plugin";
 import { LoggingLevel } from "./logging-level";
 import { PluginLoader } from "../construction/plugin-loader";
-import { ILoggingOptions } from "./ilogging-options";
+import { LoggingOptions } from "./logging-options";
 import { TestConfig } from "../configuration/test-config";
 import { Convert } from "../helpers/convert";
 import { Cloner } from "../helpers/cloner";
@@ -11,11 +11,11 @@ import { RG } from "../helpers/random-generator";
 export class TestLog {
     private _name: string;
     private _stepCount: number = 0;
-    private _options: ILoggingOptions;
+    private _options: LoggingOptions;
     private _level: LoggingLevel;
     private _plugins: ILoggingPlugin[];
     
-    constructor(options?: ILoggingOptions) {
+    constructor(options?: LoggingOptions) {
         this._options = options;
         this.initName(this._options?.name || `TestLog_${RG.getGuid()}`);
     }
@@ -32,24 +32,33 @@ export class TestLog {
         this._name = Convert.toSafeString(name);
     }
 
-    async options(): Promise<ILoggingOptions> {
+    async options(): Promise<LoggingOptions> {
         if (!this._options) {
-            this._options = await TestConfig.get<ILoggingOptions>("logging", null);
+            this._options = await TestConfig.get<LoggingOptions>("logging");
         }
         return this._options;
     }
 
     async level(): Promise<LoggingLevel> {
         if (!this._level) {
-            this._level = LoggingLevel.parse((await this.options()).level || LoggingLevel.info.name);
+            this._level = LoggingLevel.parse((await this.options())?.level || LoggingLevel.info.name);
         }
         return this._level;
     }
 
     async plugins(): Promise<ILoggingPlugin[]> {
         if (!this._plugins) {
-            let names: string[] = (await this.options()).pluginNames || [];
-            this._plugins = await PluginLoader.load<ILoggingPlugin>(...names);
+            this._plugins = [];
+            let names: string[] = (await this.options())?.pluginNames || [];
+            for (var i=0; i<names.length; i++) {
+                let name: string = names[i];
+                if (name) {
+                    let p: ILoggingPlugin = await PluginLoader.load<ILoggingPlugin>(name);
+                    if (p) {
+                        this._plugins.push(p);
+                    }
+                }
+            }
         }
         return this._plugins;
     }
@@ -134,13 +143,16 @@ export class TestLog {
         let plugins: ILoggingPlugin[] = await this.plugins();
         for (var i=0; i<plugins.length; i++) {
             let p: ILoggingPlugin = plugins[i];
-            try {
-                let enabled: boolean = await p.enabled();
-                if (enabled) {
-                    await p.log(level, message);
+            if (p) {
+                try {
+                    let enabled: boolean = await p.isEnabled();
+                    if (enabled) {
+                        await p.log(level, message);
+                    }
+                } catch (e) {
+                    console.warn(TestLog.format(this.name(), LoggingLevel.warn, 
+                        `unable to send log message to '${p.name || 'unknown'}' plugin due to: ${e}`));
                 }
-            } catch (e) {
-                console.log(TestLog.format(this.name(), LoggingLevel.warn, "unable to send log message to '" + p.name + "' plugin due to: " + e));
             }
         }
     }
@@ -150,19 +162,19 @@ export class TestLog {
      * allowing them to process the result
      * @param result a `TestResult` object to be sent
      */
-    async logResult(result: TestResult): Promise<void> {
+    async logResult(result: ITestResult): Promise<void> {
         let plugins: ILoggingPlugin[] = await this.plugins();
         for (var i=0; i<plugins.length; i++) {
             let p: ILoggingPlugin = plugins[i];
             if (p) {
                 try {
-                    let enabled: boolean = await p.enabled();
+                    let enabled: boolean = await p.isEnabled();
                     if (enabled) {
-                        let r: TestResult = Cloner.clone(result);
+                        let r: ITestResult = Cloner.clone(result);
                         await p.logResult(r);
                     }
                 } catch (e) {
-                    console.log(TestLog.format(this._name, LoggingLevel.warn, 
+                    console.warn(TestLog.format(this._name, LoggingLevel.warn, 
                         `unable to send result to '${p.name || 'unknown'}' plugin due to: ${e}`));
                 }
             }
@@ -179,7 +191,7 @@ export class TestLog {
         for (var i=0; i<plugins.length; i++) {
             let p: ILoggingPlugin = plugins[i];
             try {
-                let enabled: boolean = await p.enabled();
+                let enabled: boolean = await p.isEnabled();
                 if (enabled) {
                     await plugins[i].finalise();
                 }

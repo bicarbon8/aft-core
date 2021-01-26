@@ -2,7 +2,7 @@ import { ILoggingPlugin } from "../../src/logging/plugins/ilogging-plugin";
 import { LoggingPluginStore } from "./logging-plugin-store";
 import { LoggingLevel } from "../../src/logging/logging-level";
 import { LogMessage } from "./log-message";
-import { TestResult } from "../../src/integrations/test-cases/test-result";
+import { ITestResult } from "../../src/integrations/test-cases/itest-result";
 
 export class FakeLogger implements ILoggingPlugin {
     name: string = 'fakelogger';
@@ -11,15 +11,19 @@ export class FakeLogger implements ILoggingPlugin {
         return LoggingPluginStore.lvl;
     }
 
-    async enabled(): Promise<boolean> {
+    async isEnabled(): Promise<boolean> {
         return LoggingPluginStore.en;
+    }
+
+    async onLoad(): Promise<void> {
+        LoggingPluginStore.onLoad = true;
     }
 
     async log(level: LoggingLevel, message: string): Promise<void> {
         LoggingPluginStore.logs.push(new LogMessage(level, message));
     }
 
-    async logResult(result: TestResult): Promise<void> {
+    async logResult(result: ITestResult): Promise<void> {
         LoggingPluginStore.results.push(result);
     }
 

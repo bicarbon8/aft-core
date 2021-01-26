@@ -1,4 +1,4 @@
-import { IProcessingResult, ITestWrapperOptions, should, TestWrapper } from "../../src";
+import { ProcessingResult, TestWrapperOptions, should, TestWrapper } from "../../src";
 
 let consoleLog = console.log;
 describe('should', () => {
@@ -11,18 +11,18 @@ describe('should', () => {
     });
     
     it('returns an IProcessingResult', async () => {
-        let expected: IProcessingResult = await should(() => expect(true).toBeTruthy());
+        let expected: ProcessingResult = await should(() => expect(true).toBeTruthy());
 
         expect(expected).toBeDefined();
     });
     
     it('supports passing in ITestWrapperOptions', async () => {
-        let options: ITestWrapperOptions = {
+        let options: TestWrapperOptions = {
             testCases: ['C1234'],
             defects: ['AUTO-123'],
             description: 'false should always be falsy'
         };
-        let expected: IProcessingResult = await should(() => expect(false).toBeFalsy(), options);
+        let expected: ProcessingResult = await should(() => expect(false).toBeFalsy(), options);
 
         expect(expected).toBeDefined();
     });

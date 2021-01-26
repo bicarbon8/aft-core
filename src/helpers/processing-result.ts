@@ -3,7 +3,7 @@
  * to be expressed from functions that would normally
  * return a simple boolean
  */
-export interface IProcessingResult {
+export interface ProcessingResult {
     obj?: any;
     success?: boolean;
     message?: string

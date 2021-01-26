@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { TestLog } from '../logging/test-log';
 import { LoggingLevel } from '../logging/logging-level';
-import { IProcessingResult } from '../helpers/iprocessing-result';
+import { ProcessingResult } from '../helpers/processing-result';
 
 export module TestConfig {
     var _aftConfig: object;
@@ -28,7 +28,7 @@ export module TestConfig {
                     }
                     if (data) {
                         let fileContents: string = data.toString('utf8');
-                        let jsonRes: IProcessingResult = isJsonString(fileContents);
+                        let jsonRes: ProcessingResult = isJsonString(fileContents);
                         if (jsonRes.success) {
                             resolve(jsonRes.obj as T);
                         } else {
@@ -98,9 +98,9 @@ export module TestConfig {
                     result = await getFrom(obj[currentKey], keysArray.join('.'));
                     break;
                 case "string":
-                    let envRes: IProcessingResult = isEnvVar(obj);
+                    let envRes: ProcessingResult = isEnvVar(obj);
                     if (envRes.success) {
-                        let jsonRes: IProcessingResult = isJsonString(envRes.obj);
+                        let jsonRes: ProcessingResult = isJsonString(envRes.obj);
                         if (jsonRes.success) {
                             result = await getFrom(jsonRes.obj, keys);
                             break;
@@ -114,9 +114,9 @@ export module TestConfig {
         } else {
             switch(typeof obj) {
                 case "string":
-                    let envRes: IProcessingResult = isEnvVar(obj);
+                    let envRes: ProcessingResult = isEnvVar(obj);
                     if (envRes.success) {
-                        let jsonRes: IProcessingResult = isJsonString(envRes.obj);
+                        let jsonRes: ProcessingResult = isJsonString(envRes.obj);
                         if (jsonRes.success) {
                             result = jsonRes.obj;
                         } else {
@@ -141,7 +141,7 @@ export module TestConfig {
      * @param str the value to be parsed to determine if it is an
      * Environment Variable reference
      */
-    export function isEnvVar(str: string): IProcessingResult {
+    export function isEnvVar(str: string): ProcessingResult {
         if (str) {
             let matchResults = str.match(/^%(.*)%$/);
             if (matchResults && matchResults.length > 0) {
@@ -158,7 +158,7 @@ export module TestConfig {
      * JSON.parse command
      * @param str the string to be tested for validity
      */
-    export function isJsonString(str: string): IProcessingResult {
+    export function isJsonString(str: string): ProcessingResult {
         let err: string = null;
         if (str) {        
             try {

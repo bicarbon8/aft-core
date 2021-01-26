@@ -1,4 +1,4 @@
-export interface ILoggingOptions {
+export interface LoggingOptions {
     name?: string;
     level?: string;
     message?: string;

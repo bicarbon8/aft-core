@@ -2,8 +2,11 @@ import { DefectStatus, IDefect, IDefectHandlerPlugin, RG } from "../../../../src
 
 export class MockDefectHandlerPlugin implements IDefectHandlerPlugin {
     name: string = 'mock-defect-handler-plugin';
-    async enabled(): Promise<boolean> {
+    async isEnabled(): Promise<boolean> {
         return true;
+    }
+    async onLoad(): Promise<void> {
+        
     }
     async getDefect(defectId: string): Promise<IDefect> {
         return {
