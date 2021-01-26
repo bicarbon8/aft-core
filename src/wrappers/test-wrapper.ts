@@ -4,7 +4,6 @@ import { TestWrapperOptions } from "./test-wrapper-options";
 import { TestStatus } from "../integrations/test-cases/test-status";
 import { ITestResult } from "../integrations/test-cases/itest-result";
 import '../extensions/string-extensions';
-import '../extensions/set-extensions';
 import { Convert } from "../helpers/convert";
 import { ProcessingResult } from "../helpers/processing-result";
 import { TestCasePluginManager } from "../integrations/test-cases/test-case-plugin-manager";
@@ -12,7 +11,7 @@ import { IDefect } from "../integrations/defects/idefect";
 import { DefectPluginManager } from "../integrations/defects/defect-plugin-manager";
 import { DefectStatus } from "../integrations/defects/defect-status";
 import { RandomGenerator, RG } from "../helpers/random-generator";
-import { BuildInfo } from "../helpers/build-info";
+import { BuildInfoPluginManager } from "../helpers/build-info-plugin-manager";
 
 /**
  * provides pre-test execution filtering based on specified 
@@ -34,6 +33,7 @@ export class TestWrapper {
     private _loggedCases: string[] = [];
     private _testCaseManager: TestCasePluginManager = null;
     private _defectManager: DefectPluginManager = null;
+    private _buildInfoManager: BuildInfoPluginManager = null;
 
     /**
      * this class is intended to be utilised via the `should(expectation, options)` function
@@ -58,6 +58,7 @@ export class TestWrapper {
         this._initialiseLogger(options);
         this._initialiseTestCases(options);
         this._initialiseDefects(options);
+        this._initialiseBuildInfo(options);
     }
 
     expectation(): Func<TestWrapper, any> {
@@ -119,18 +120,22 @@ export class TestWrapper {
         this._logger = options?.logger || new TestLog({name: this.description()});
     }
 
-    private _initialiseTestCases(options?: TestWrapperOptions) {
+    private _initialiseTestCases(options?: TestWrapperOptions): void {
         this._testCaseManager = options?.testCasePluginManager || TestCasePluginManager.instance();
         options?.testCases?.forEach(c => {
             this.testCases().push(c);
         });
     }
 
-    private _initialiseDefects(options?: TestWrapperOptions) {
+    private _initialiseDefects(options?: TestWrapperOptions): void {
         this._defectManager = options?.defectPluginManager || DefectPluginManager.instance();
         options?.defects?.forEach(d => {
             this.defects().push(d);
         });
+    }
+
+    private _initialiseBuildInfo(options?: TestWrapperOptions) {
+        this._buildInfoManager = options?.buildInfoPluginManager || BuildInfoPluginManager.instance();
     }
 
     /**
@@ -299,8 +304,8 @@ export class TestWrapper {
             metadata: {
                 durationMs: Convert.toElapsedMs(this._startTime),
                 statusStr: TestStatus[status],
-                buildName: await BuildInfo.name() || 'unknown',
-                buildNumber: await BuildInfo.number() || 'unknown'
+                buildName: await this._buildInfoManager.getBuildName() || 'unknown',
+                buildNumber: await this._buildInfoManager.getBuildNumber() || 'unknown'
             }
         };
         if (this.errors().length > 0) {

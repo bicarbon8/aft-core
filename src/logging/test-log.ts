@@ -7,6 +7,7 @@ import { TestConfig } from "../configuration/test-config";
 import { Convert } from "../helpers/convert";
 import { Cloner } from "../helpers/cloner";
 import { RG } from "../helpers/random-generator";
+import { EllipsisLocation } from "../extensions/ellipsis-location";
 
 export class TestLog {
     private _name: string;
@@ -29,7 +30,7 @@ export class TestLog {
     }
 
     initName(name: string): void {
-        this._name = Convert.toSafeString(name);
+        this._name = Convert.toSafeString(name).ellide(50, EllipsisLocation.middle);
     }
 
     async options(): Promise<LoggingOptions> {

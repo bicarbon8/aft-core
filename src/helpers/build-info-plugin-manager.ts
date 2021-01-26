@@ -20,11 +20,11 @@ export class BuildInfoPluginManager extends PluginManager<IBuildInfoHandlerPlugi
             if (p && await p.isEnabled()) {
                 return await p.getBuildName();
             } else {
-                return '';
+                return null;
             }
         }).catch(async (err) => {
             await this.logger.warn(err);
-            return '';
+            return null;
         });
     }
 
@@ -34,11 +34,11 @@ export class BuildInfoPluginManager extends PluginManager<IBuildInfoHandlerPlugi
             if (p && await p.isEnabled()) {
                 return await p.getBuildNumber();
             } else {
-                return '';
+                return null;
             }
         }).catch(async (err) => {
             await this.logger.warn(err);
-            return '';
+            return null;
         });
     }
 }

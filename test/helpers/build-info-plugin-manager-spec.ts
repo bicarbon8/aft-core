@@ -14,9 +14,13 @@ describe('BuildInfoPluginManager', () => {
 
     it('can handle errors in loaded IBuildInfoHandlerPlugin', async () => {
         let p: IBuildInfoHandlerPlugin = new MockBuildInfoHandlerPlugin();
-        let err: string = 'Mock Exception on getBuildInfo';
+        let errGetName: string = 'Mock Exception on getBuildName';
+        let errGetNumber: string = 'Mock Exception on getBuildNumber';
         spyOn(p, 'getBuildName').and.callFake(() => {
-            throw err;
+            throw errGetName;
+        });
+        spyOn(p, 'getBuildNumber').and.callFake(() => {
+            throw errGetNumber;
         });
         let l: TestLog = new TestLog({name: 'silent logger'});
         let warnMessage: string = null;
@@ -25,9 +29,12 @@ describe('BuildInfoPluginManager', () => {
         });
         let manager: BuildInfoPluginManager = new BuildInfoPluginManager({plugin: p, logger: l});
         
-        expect(await manager.getBuildName()).toBe('');
+        expect(await manager.getBuildName()).toBeNull();
+        expect(warnMessage).toBe(errGetName);
+        expect(await manager.getBuildNumber()).toBeNull();
+        expect(warnMessage).toBe(errGetNumber);
         expect(p.getBuildName).toHaveBeenCalled();
-        expect(l.warn).toHaveBeenCalled();
-        expect(warnMessage).toBe(err);
+        expect(p.getBuildNumber).toHaveBeenCalled();
+        expect(l.warn).toHaveBeenCalledTimes(2);
     });
 });
