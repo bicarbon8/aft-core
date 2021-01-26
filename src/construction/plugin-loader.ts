@@ -1,18 +1,13 @@
 import * as path from 'path';
+import { IPlugin } from './iplugin';
 
 export module PluginLoader {
-    export async function load<T>(...pluginNames: string[]): Promise<T[]> {
-        let plugins: T[] = [];
-        for (var i=0; i<pluginNames.length; i++) {
-            let p: T = await validatePlugin<T>(pluginNames[i]);
-            if (p) {
-                plugins.push(p);
-            }
-        }
-        return plugins;
+    export async function load<T extends IPlugin>(pluginName: string): Promise<T> {
+        let p: T = await validatePlugin<T>(pluginName);
+        return p;
     }
 
-    async function validatePlugin<T>(pluginName: string): Promise<T> {
+    async function validatePlugin<T extends IPlugin>(pluginName: string): Promise<T> {
         var plugin;
 
         try {
@@ -28,7 +23,9 @@ export module PluginLoader {
         if (plugin) {
             try {
                 let constructorName: string = Object.keys(plugin)[0];
-                return new plugin[constructorName]();
+                let p: T = new plugin[constructorName]();
+                await p.onLoad();
+                return p;
             } catch (e) {
                 console.warn(`unable to create instance of loaded plugin '${pluginName}' due to: ${e}`);
             }

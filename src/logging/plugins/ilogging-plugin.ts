@@ -1,12 +1,10 @@
-import { TestLogLevel } from "../test-log-level";
-import { TestResult } from "../../integrations/test-cases/test-result";
+import { IPlugin } from "../../construction/iplugin";
+import { ITestResult } from "../../integrations/test-cases/itest-result";
+import { LoggingLevel } from "../logging-level";
 
-export interface ILoggingPlugin {
-    name: string;
-    
-    level(): Promise<TestLogLevel>;
-    enabled(): Promise<boolean>;
-    log(level: TestLogLevel, message: string): Promise<void>;
-    logResult(result: TestResult): Promise<void>;
+export interface ILoggingPlugin extends IPlugin {
+    level(): Promise<LoggingLevel>;
+    log(level: LoggingLevel, message: string): Promise<void>;
+    logResult(result: ITestResult): Promise<void>;
     finalise(): Promise<void>;
 }

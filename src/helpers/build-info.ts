@@ -1,13 +1,24 @@
-import { TestConfig } from "../configuration/test-config";
+import { BuildInfoPluginManager } from "./build-info-plugin-manager";
 
+/**
+ * [OBSOLETE] use `BuildInfoPluginManager.instance()` instead
+ */
 export module BuildInfo {
+    /**
+     * returns the build name as supplied by any loaded
+     * `IBuildInfoHandlerPlugin` or empty string if none
+     * loaded
+     */
     export async function name(): Promise<string> {
-        // TODO: use Build Server plugin to get value
-        return TestConfig.getValueOrDefault('JOB_NAME');
+        return await BuildInfoPluginManager.instance().getBuildName();
     }
 
+    /**
+     * returns the build number as supplied by any loaded
+     * `IBuildInfoHandlerPlugin` or empty string if none
+     * loaded
+     */
     export async function number(): Promise<string> {
-        // TODO: use Build Server plugin to get value
-        return TestConfig.getValueOrDefault('BUILD_NUMBER');
+        return await BuildInfoPluginManager.instance().getBuildNumber();
     }
 }

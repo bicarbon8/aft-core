@@ -1,12 +1,14 @@
+import { BuildInfoPluginManager } from "../helpers/build-info-plugin-manager";
+import { DefectPluginManager } from "../integrations/defects/defect-plugin-manager";
+import { TestCasePluginManager } from "../integrations/test-cases/test-case-plugin-manager";
 import { TestLog } from "../logging/test-log";
 
-export class TestWrapperOptions {
-    name: string;
-    logger: TestLog;
-    testCases: Set<string> = new Set<string>();
-    defects: Set<string> = new Set<string>();
-
-    constructor(name: string) {
-        this.name = name;
-    }
+export interface TestWrapperOptions {
+    buildInfoPluginManager?: BuildInfoPluginManager;
+    defects?: string[];
+    defectPluginManager?: DefectPluginManager;
+    logger?: TestLog;
+    testCases?: string[];
+    testCasePluginManager?: TestCasePluginManager;
+    description?: string;
 }

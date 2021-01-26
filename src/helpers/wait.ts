@@ -18,7 +18,7 @@ export module Wait {
         do {
             try {
                 attempts++;
-                result = await condition();
+                result = await Promise.resolve(condition());
             } catch (e) {
                 ex = e;
                 try {
