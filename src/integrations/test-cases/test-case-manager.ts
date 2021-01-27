@@ -1,11 +1,33 @@
 import { PluginManager } from "../../construction/plugin-manager";
 import { ProcessingResult } from "../../helpers/processing-result";
+import { TestLog } from "../../logging/test-log";
 import { ITestCase } from "./itest-case";
 import { ITestCaseHandlerPlugin } from "./plugins/itest-case-handler-plugin";
+import { TestCaseManagerOptions } from "./test-case-manager-options";
 
-export class TestCasePluginManager extends PluginManager<ITestCaseHandlerPlugin> {
-    getConfigurationKey(): string {
-        return 'test-case-handler-plugin';
+/**
+ * loads and provides an interface between any `ITestCaseHandlerPlugin`
+ * to specify a plugin use the following `aftconfig.json` key:
+ * ```
+ * {
+ *   ...
+ *   "testCaseManager": {
+ *     "pluginName": "./path/to/plugin"
+ *   }
+ *   ...
+ * }
+ * ```
+ */
+export class TestCaseManager extends PluginManager<ITestCaseHandlerPlugin, TestCaseManagerOptions> {
+    private logger: TestLog;
+
+    constructor(options?: TestCaseManagerOptions) {
+        super(options);
+        this.logger = this.options['logger'] || new TestLog({name: 'TestCaseManager', pluginNames: []});
+    }
+    
+    getOptionsConfigurationKey(): string {
+        return 'testCaseManager';
     }
 
     async getTestCase(testId: string): Promise<ITestCase> {
@@ -48,12 +70,17 @@ export class TestCasePluginManager extends PluginManager<ITestCaseHandlerPlugin>
     }
 }
 
-export module TestCasePluginManager {
-    var _inst: TestCasePluginManager = null;
-    export function instance(): TestCasePluginManager {
+export module TestCaseManager {
+    var _inst: TestCaseManager = null;
+    export function instance(): TestCaseManager {
         if (_inst === null) {
-            _inst = new TestCasePluginManager();
+            _inst = new TestCaseManager();
         }
         return _inst;
     }
 }
+
+/**
+ * [OBSOLETE] use `TestCaseManager` instead
+ */
+export var TestCasePluginManager = TestCaseManager;

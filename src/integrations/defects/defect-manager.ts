@@ -1,10 +1,32 @@
 import { PluginManager } from "../../construction/plugin-manager";
+import { TestLog } from "../../logging/test-log";
+import { DefectManagerOptions } from "./defect-manager-options";
 import { IDefect } from "./idefect";
 import { IDefectHandlerPlugin } from "./plugins/idefect-handler-plugin";
 
-export class DefectPluginManager extends PluginManager<IDefectHandlerPlugin> {
-    getConfigurationKey(): string {
-        return 'defect-handler-plugin';
+/**
+ * loads and provides an interface between any `IDefectHandlerPlugin`
+ * to specify a plugin use the following `aftconfig.json` key:
+ * ```
+ * {
+ *   ...
+ *   "defectManager": {
+ *     "pluginName": "./path/to/plugin"
+ *   }
+ *   ...
+ * }
+ * ```
+ */
+export class DefectManager extends PluginManager<IDefectHandlerPlugin, DefectManagerOptions> {
+    private logger: TestLog;
+
+    constructor(options?: DefectManagerOptions) {
+        super(options);
+        this.logger = this.options['logger'] || new TestLog({name: 'DefectManager', pluginNames: []});
+    }
+    
+    getOptionsConfigurationKey(): string {
+        return 'defectManager';
     }
     
     async getDefect(defectId: string): Promise<IDefect> {
@@ -34,12 +56,17 @@ export class DefectPluginManager extends PluginManager<IDefectHandlerPlugin> {
     }
 }
 
-export module DefectPluginManager {
-    var _inst: DefectPluginManager = null;
-    export function instance(): DefectPluginManager {
+export module DefectManager {
+    var _inst: DefectManager = null;
+    export function instance(): DefectManager {
         if (_inst === null) {
-            _inst = new DefectPluginManager();
+            _inst = new DefectManager();
         }
         return _inst;
     }
 }
+
+/**
+ * [OBSOLETE] use `DefectManager` instead
+ */
+export var DefectPluginManager = DefectManager;

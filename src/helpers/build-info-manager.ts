@@ -1,17 +1,31 @@
 import { PluginManager } from "../construction/plugin-manager";
-import { PluginManagerOptions } from "../construction/plugin-manager-options";
 import { TestLog } from "../logging/test-log";
+import { BuildInfoManagerOptions } from "./build-info-manager-options";
 import { IBuildInfoHandlerPlugin } from "./ibuild-info-handler-plugin";
 
 /**
- * loads in a specified plugin using configuration key of
- * `build-info-handler-plugin` and supplies this information
- * via the `getPlugin` function which returns a `IBuildInfoHandlerPlugin`
- * instance
+ * loads and provides an interface between any `IBuildInfoHandlerPlugin`
+ * to specify a plugin use the following `aftconfig.json` key:
+ * ```
+ * {
+ *   ...
+ *   "buildInfoManager": {
+ *     "pluginName": "./path/to/plugin"
+ *   }
+ *   ...
+ * }
+ * ```
  */
-export class BuildInfoPluginManager extends PluginManager<IBuildInfoHandlerPlugin> {
-    getConfigurationKey(): string {
-        return 'build-info-handler-plugin';
+export class BuildInfoManager extends PluginManager<IBuildInfoHandlerPlugin, BuildInfoManagerOptions> {
+    private logger: TestLog;
+
+    constructor(options?: BuildInfoManagerOptions) {
+        super(options);
+        this.logger = this.options['logger'] || new TestLog({name: 'BuildInfoManager', pluginNames: []});
+    }
+    
+    getOptionsConfigurationKey(): string {
+        return 'buildInfoManager';
     }
 
     async getBuildName(): Promise<string> {
@@ -49,13 +63,18 @@ export class BuildInfoPluginManager extends PluginManager<IBuildInfoHandlerPlugi
  * via the `getPlugin` function which returns a `IBuildInfoHandlerPlugin`
  * instance
  */
-export module BuildInfoPluginManager {
-    var _inst: BuildInfoPluginManager = null;
+export module BuildInfoManager {
+    var _inst: BuildInfoManager = null;
 
-    export function instance(): BuildInfoPluginManager {
+    export function instance(): BuildInfoManager {
         if (!_inst) {
-            _inst = new BuildInfoPluginManager();
+            _inst = new BuildInfoManager();
         }
         return _inst;
     }
 }
+
+/**
+ * [OBSOLETE] use `BuildInfoManager` instead
+ */
+export var BuildInfoPluginManager = BuildInfoManager;

@@ -65,7 +65,7 @@ to create a logging plugin you simply need to implment the `ILoggingPlugin` inte
 ```json
 {
     "logging": {
-        "plugins": [
+        "pluginNames": [
             "./relative/path/to/logging-plugin1",
             "/full/path/to/logging-plugin2"
         ],
@@ -80,25 +80,23 @@ NOTE: if the plugins are referenced as an external npm packages you may leave of
 ```typescript
 export class ExternalLogger implements ILoggingPlugin {
     name: string = 'externallogger';
-    
     async level(): Promise<TestLogLevel> {
         let levelStr: string = await TestConfig.getValueOrDefault('external-logging-level', TestLogLevel.warn.name);
         return TestLogLevel.parse(levelStr);
     }
-
-    async enabled(): Promise<boolean> {
+    async isEnabled(): Promise<boolean> {
         let enabledStr: string = await TestConfig.getValueOrDefault('external-logging-enabled', 'false');
         return enabledStr.toLocaleLowerCase() == 'true';
     }
-
+    async onLoad(): Promise<void> {
+        /* do something once on load */
+    }
     async log(level: TestLogLevel, message: string): Promise<void> {
         /* perform some external logging action */
     }
-
     async logResult(result: TestResult): Promise<void> {
         /* log the TestResult to an external system */
     }
-
     async finalise(): Promise<void> {
         /* perform any cleanup */
     }
@@ -125,8 +123,11 @@ export class MockTestCaseHandlerPlugin implements ITestCaseHandlerPlugin {
     constructor(): void {
         this.testRailApi = new TestRailClient();
     }
-    async enabled(): Promise<boolean> {
+    async isEnabled(): Promise<boolean> {
         return true;
+    }
+    async onLoad(): Promise<void> {
+        /* do something one time on load */
     }
     async getTestCase(testId: string): Promise<ITestCase> {
         return await testRailApi.getCaseById(testId);
@@ -164,8 +165,11 @@ export class MockDefectHandlerPlugin implements IDefectHandlerPlugin {
     constructor(): void {
         this.bugzillaApi = new BugzillaClient();
     }
-    async enabled(): Promise<boolean> {
+    async isEnabled(): Promise<boolean> {
         return true;
+    }
+    async onLoad(): Promise<void> {
+        /* do something one time on load */
     }
     async getDefect(defectId: string): Promise<IDefect> {
         return await bugzillaApi.getDefectById(defectId);

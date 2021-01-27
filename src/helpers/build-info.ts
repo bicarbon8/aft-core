@@ -1,7 +1,7 @@
-import { BuildInfoPluginManager } from "./build-info-plugin-manager";
+import { BuildInfoManager } from "./build-info-manager";
 
 /**
- * [OBSOLETE] use `BuildInfoPluginManager.instance()` instead
+ * [OBSOLETE] use `BuildInfoManager.instance()` instead
  */
 export module BuildInfo {
     /**
@@ -10,7 +10,7 @@ export module BuildInfo {
      * loaded
      */
     export async function name(): Promise<string> {
-        return await BuildInfoPluginManager.instance().getBuildName();
+        return await BuildInfoManager.instance().getBuildName();
     }
 
     /**
@@ -19,6 +19,6 @@ export module BuildInfo {
      * loaded
      */
     export async function number(): Promise<string> {
-        return await BuildInfoPluginManager.instance().getBuildNumber();
+        return await BuildInfoManager.instance().getBuildNumber();
     }
 }

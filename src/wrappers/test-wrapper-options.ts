@@ -1,14 +1,14 @@
-import { BuildInfoPluginManager } from "../helpers/build-info-plugin-manager";
-import { DefectPluginManager } from "../integrations/defects/defect-plugin-manager";
-import { TestCasePluginManager } from "../integrations/test-cases/test-case-plugin-manager";
+import { BuildInfoManager } from "../helpers/build-info-manager";
+import { DefectManager } from "../integrations/defects/defect-manager";
+import { TestCaseManager } from "../integrations/test-cases/test-case-manager";
 import { TestLog } from "../logging/test-log";
 
 export interface TestWrapperOptions {
-    buildInfoPluginManager?: BuildInfoPluginManager;
+    buildInfoManager?: BuildInfoManager;
     defects?: string[];
-    defectPluginManager?: DefectPluginManager;
+    defectManager?: DefectManager;
     logger?: TestLog;
     testCases?: string[];
-    testCasePluginManager?: TestCasePluginManager;
+    testCaseManager?: TestCaseManager;
     description?: string;
 }
