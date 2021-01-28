@@ -1,38 +1,35 @@
-import { TestConfig } from "../configuration/test-config";
-import { TestLog } from "../logging/test-log";
 import { IPlugin } from "./iplugin";
+import { OptionsManager } from "./options-manager";
 import { PluginLoader } from "./plugin-loader";
-import { PluginManagerOptions } from "./plugin-manager-options";
 
-export abstract class PluginManager<T extends IPlugin> {
-    protected pluginName: string;
+/**
+ * helper base class for use by classes that load in and manage a plugin
+ * to provide integration with some external system.
+ * NOTE: loading of only one plugin is supported by this base class and
+ * the configuration key for it must always be `pluginName`.
+ * ex: `aftconfig.json`
+ * ```
+ * {
+ *   "someConfigOptions": {
+ *     ...
+ *     "pluginName": "./path/to/plugin"
+ *     ...
+ *   }
+ * }
+ * ```
+ */
+export abstract class PluginManager<T extends IPlugin, Tops> extends OptionsManager<Tops> {
     protected plugin: T;
-    protected logger: TestLog;
-
-    constructor(options?: PluginManagerOptions) {
-        this.pluginName = options?.pluginName;
-        this.plugin = options?.plugin;
-        let typeName = Object.getPrototypeOf(this).constructor.name;
-        this.logger = options?.logger || new TestLog({name: typeName});
-    }
-
-    abstract getConfigurationKey(): string;
-
-    async getPluginName(): Promise<string> {
-        if (!this.pluginName) {
-            this.pluginName = await TestConfig.get(this.getConfigurationKey());
-        }
-        return this.pluginName;
-    }
-
+    /**
+     * loads the plugin that is specified either in the options passed
+     * to the class constructor or within `aftconfig.json`. if no plugin
+     * is specified then nothing will be loaded and `undefined` is returned
+     */
     async getPlugin(): Promise<T> {
         if (!this.plugin) {
-            let pluginName: string = await this.getPluginName();
-            if (pluginName) {
-                let plugin: T = await PluginLoader.load<T>(pluginName);
-                if (plugin) {
-                    this.plugin = plugin;
-                }
+            let pName: string = await this.getOption('pluginName');
+            if (pName) {
+                this.plugin = await PluginLoader.load<T>(pName);
             }
         }
         return this.plugin;

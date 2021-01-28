@@ -3,25 +3,49 @@ import { ILoggingPlugin } from "./plugins/ilogging-plugin";
 import { LoggingLevel } from "./logging-level";
 import { PluginLoader } from "../construction/plugin-loader";
 import { LoggingOptions } from "./logging-options";
-import { TestConfig } from "../configuration/test-config";
 import { Convert } from "../helpers/convert";
 import { Cloner } from "../helpers/cloner";
 import { RG } from "../helpers/random-generator";
 import { EllipsisLocation } from "../extensions/ellipsis-location";
+import { OptionsManager } from "../construction/options-manager";
 
-export class TestLog {
+/**
+ * a logging class that uses configuration to determine what
+ * should be logged to the console and formats the logging output
+ * to indicate the source of the logging data. Additionally this
+ * class manages logging plugins and serves as the interface for 
+ * sending `ITestResult` data to `ILoggingPlugin` instances.
+ * Configuration for this class can be passed in directly or 
+ * specified in `aftconfig.json` like:
+ * ```
+ * {
+ *   ...
+ *   "logging": {
+ *     "level": "info",
+ *     "pluginNames": [
+ *       "./relative/path/to/logging-plugin1",
+ *       "/full/path/to/logging-plugin2"
+ *     ]
+ *   }
+ *   ...
+ * }
+ * ```
+ */
+export class TestLog extends OptionsManager<LoggingOptions> {
     private _name: string;
     private _stepCount: number = 0;
-    private _options: LoggingOptions;
     private _level: LoggingLevel;
     private _plugins: ILoggingPlugin[];
-    
-    constructor(options?: LoggingOptions) {
-        this._options = options;
-        this.initName(this._options?.name || `TestLog_${RG.getGuid()}`);
+
+    getOptionsConfigurationKey(): string {
+        return 'logging';
     }
 
-    name(): string {
+    async name(): Promise<string> {
+        if (!this._name) {
+            let n: string = await this.getOption('name', `TestLog_${RG.getGuid()}`);
+            this._name = Convert.toSafeString(n).ellide(50, EllipsisLocation.middle);
+        }
         return this._name;
     }
 
@@ -29,20 +53,9 @@ export class TestLog {
         return this._stepCount;
     }
 
-    initName(name: string): void {
-        this._name = Convert.toSafeString(name).ellide(50, EllipsisLocation.middle);
-    }
-
-    async options(): Promise<LoggingOptions> {
-        if (!this._options) {
-            this._options = await TestConfig.get<LoggingOptions>("logging");
-        }
-        return this._options;
-    }
-
     async level(): Promise<LoggingLevel> {
         if (!this._level) {
-            this._level = LoggingLevel.parse((await this.options())?.level || LoggingLevel.info.name);
+            this._level = LoggingLevel.parse((await this.getOption<string>('level', LoggingLevel.info.name)));
         }
         return this._level;
     }
@@ -50,7 +63,7 @@ export class TestLog {
     async plugins(): Promise<ILoggingPlugin[]> {
         if (!this._plugins) {
             this._plugins = [];
-            let names: string[] = (await this.options())?.pluginNames || [];
+            let names: string[] = await this.getOption<string[]>('pluginNames', []);
             for (var i=0; i<names.length; i++) {
                 let name: string = names[i];
                 if (name) {
@@ -138,7 +151,7 @@ export class TestLog {
     async log(level: LoggingLevel, message: string): Promise<void> {
         let l: LoggingLevel = await this.level();
         if (level.value >= l.value && level != LoggingLevel.none) {
-            console.log(TestLog.format(this.name(), level, message));
+            console.log(TestLog.format(await this.name(), level, message));
         }
         
         let plugins: ILoggingPlugin[] = await this.plugins();
@@ -151,7 +164,7 @@ export class TestLog {
                         await p.log(level, message);
                     }
                 } catch (e) {
-                    console.warn(TestLog.format(this.name(), LoggingLevel.warn, 
+                    console.warn(TestLog.format(await this.name(), LoggingLevel.warn, 
                         `unable to send log message to '${p.name || 'unknown'}' plugin due to: ${e}`));
                 }
             }
@@ -197,7 +210,7 @@ export class TestLog {
                     await plugins[i].finalise();
                 }
             } catch (e) {
-                console.log(TestLog.format(this.name(), LoggingLevel.warn, `unable to call finalise on ${p.name} due to: ${e}`))
+                console.log(TestLog.format(await this.name(), LoggingLevel.warn, `unable to call finalise on ${p.name} due to: ${e}`))
             }
         }
     }

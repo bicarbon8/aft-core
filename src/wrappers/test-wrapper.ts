@@ -6,12 +6,12 @@ import { ITestResult } from "../integrations/test-cases/itest-result";
 import '../extensions/string-extensions';
 import { Convert } from "../helpers/convert";
 import { ProcessingResult } from "../helpers/processing-result";
-import { TestCasePluginManager } from "../integrations/test-cases/test-case-plugin-manager";
+import { TestCaseManager } from "../integrations/test-cases/test-case-manager";
 import { IDefect } from "../integrations/defects/idefect";
-import { DefectPluginManager } from "../integrations/defects/defect-plugin-manager";
+import { DefectManager } from "../integrations/defects/defect-manager";
 import { DefectStatus } from "../integrations/defects/defect-status";
 import { RandomGenerator, RG } from "../helpers/random-generator";
-import { BuildInfoPluginManager } from "../helpers/build-info-plugin-manager";
+import { BuildInfoManager } from "../helpers/build-info-manager";
 
 /**
  * provides pre-test execution filtering based on specified 
@@ -31,9 +31,9 @@ export class TestWrapper {
     private _errors: string[] = [];
     private _startTime: number;
     private _loggedCases: string[] = [];
-    private _testCaseManager: TestCasePluginManager = null;
-    private _defectManager: DefectPluginManager = null;
-    private _buildInfoManager: BuildInfoPluginManager = null;
+    private _testCaseManager: TestCaseManager = null;
+    private _defectManager: DefectManager = null;
+    private _buildInfoManager: BuildInfoManager = null;
 
     /**
      * this class is intended to be utilised via the `should(expectation, options)` function
@@ -121,21 +121,21 @@ export class TestWrapper {
     }
 
     private _initialiseTestCases(options?: TestWrapperOptions): void {
-        this._testCaseManager = options?.testCasePluginManager || TestCasePluginManager.instance();
+        this._testCaseManager = options?.testCaseManager || TestCaseManager.instance();
         options?.testCases?.forEach(c => {
             this.testCases().push(c);
         });
     }
 
     private _initialiseDefects(options?: TestWrapperOptions): void {
-        this._defectManager = options?.defectPluginManager || DefectPluginManager.instance();
+        this._defectManager = options?.defectManager || DefectManager.instance();
         options?.defects?.forEach(d => {
             this.defects().push(d);
         });
     }
 
     private _initialiseBuildInfo(options?: TestWrapperOptions) {
-        this._buildInfoManager = options?.buildInfoPluginManager || BuildInfoPluginManager.instance();
+        this._buildInfoManager = options?.buildInfoManager || BuildInfoManager.instance();
     }
 
     /**
