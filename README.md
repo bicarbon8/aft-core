@@ -81,11 +81,11 @@ NOTE: if the plugins are referenced as an external npm packages you may leave of
 export class ExternalLogger implements ILoggingPlugin {
     name: string = 'externallogger';
     async level(): Promise<TestLogLevel> {
-        let levelStr: string = await TestConfig.getValueOrDefault('external-logging-level', TestLogLevel.warn.name);
+        let levelStr: string = await TestConfig.get('externalLogging.level', TestLogLevel.warn.name);
         return TestLogLevel.parse(levelStr);
     }
     async isEnabled(): Promise<boolean> {
-        let enabledStr: string = await TestConfig.getValueOrDefault('external-logging-enabled', 'false');
+        let enabledStr: string = await TestConfig.get('externalLogging.enabled', 'false');
         return enabledStr.toLocaleLowerCase() == 'true';
     }
     async onLoad(): Promise<void> {
