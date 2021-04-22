@@ -8,6 +8,8 @@ import { Cloner } from "../helpers/cloner";
 import { RG } from "../helpers/random-generator";
 import { EllipsisLocation } from "../extensions/ellipsis-location";
 import { OptionsManager } from "../construction/options-manager";
+import { SE } from "../extensions/string-extensions";
+import { TestLogFormatOptions } from "./test-log-format-options";
 
 /**
  * a logging class that uses configuration to determine what
@@ -43,8 +45,8 @@ export class TestLog extends OptionsManager<LoggingOptions> {
 
     async name(): Promise<string> {
         if (!this._name) {
-            let n: string = await this.getOption('name', `TestLog_${RG.getGuid()}`);
-            this._name = Convert.toSafeString(n).ellide(50, EllipsisLocation.middle);
+            let n: string = await this.getOption('name', RG.getString(8, true, true));
+            this._name = Convert.toSafeString(n);
         }
         return this._name;
     }
@@ -151,7 +153,11 @@ export class TestLog extends OptionsManager<LoggingOptions> {
     async log(level: LoggingLevel, message: string): Promise<void> {
         let l: LoggingLevel = await this.level();
         if (level.value >= l.value && level != LoggingLevel.none) {
-            console.log(TestLog.format(await this.name(), level, message));
+            console.log(TestLog.format({
+                name: await this.name(), 
+                level: level, 
+                message: message
+            }));
         }
         
         let plugins: ILoggingPlugin[] = await this.plugins();
@@ -164,8 +170,11 @@ export class TestLog extends OptionsManager<LoggingOptions> {
                         await p.log(level, message);
                     }
                 } catch (e) {
-                    console.warn(TestLog.format(await this.name(), LoggingLevel.warn, 
-                        `unable to send log message to '${p.name || 'unknown'}' plugin due to: ${e}`));
+                    console.warn(TestLog.format({
+                        name: await this.name(), 
+                        level: LoggingLevel.warn, 
+                        message: `unable to send log message to '${p.name || 'unknown'}' plugin due to: ${e}`
+                    }));
                 }
             }
         }
@@ -188,8 +197,11 @@ export class TestLog extends OptionsManager<LoggingOptions> {
                         await p.logResult(r);
                     }
                 } catch (e) {
-                    console.warn(TestLog.format(this._name, LoggingLevel.warn, 
-                        `unable to send result to '${p.name || 'unknown'}' plugin due to: ${e}`));
+                    console.warn(TestLog.format({
+                        name: await this.name(), 
+                        level: LoggingLevel.warn, 
+                        message: `unable to send result to Logging Plugin: '${p.name || 'unknown'}' due to: ${e}`
+                    }));
                 }
             }
         }
@@ -210,15 +222,23 @@ export class TestLog extends OptionsManager<LoggingOptions> {
                     await plugins[i].finalise();
                 }
             } catch (e) {
-                console.log(TestLog.format(await this.name(), LoggingLevel.warn, `unable to call finalise on ${p.name} due to: ${e}`))
+                console.log(TestLog.format({
+                    name: await this.name(), 
+                    level: LoggingLevel.warn, 
+                    message: `unable to call finalise on Logging Plugin: ${p.name || 'unknown'} due to: ${e}`
+                }));
             }
         }
     }
 }
 
 export module TestLog {
-    export function format(name: string, level: LoggingLevel, message: string) {
+    export function format(options: TestLogFormatOptions) {
+        if (!options.name) { options.name = 'unknown_name'; }
+        if (!options.message) { options.message = ''; }
+        if (!options.level) { options.level = LoggingLevel.none }
         let d: string = new Date().toLocaleTimeString();
-        return d + ' ' + level.logString + '[' + name + '] ' + message;
+        let out: string = `${d} - ${options.name} - ${options.level.logString} - ${options.message}`;
+        return out;
     }
 }

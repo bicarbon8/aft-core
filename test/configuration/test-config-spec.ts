@@ -7,7 +7,7 @@ describe('TestConfig', () => {
         it('can parse a json file', async () => {
             let packageJson: PackageJson = await TestConfig.loadJsonFile<PackageJson>('package.json');
     
-            expect(packageJson.name).toEqual('aft-core');
+            expect(packageJson.name).toMatch(/(aft-)[a-z\-]+/);
         });
 
         it('returns a meaningful error if file is not found', async () => {
@@ -99,7 +99,7 @@ describe('TestConfig', () => {
                 bar: {
                     baz: RG.getInt(9, 99),
                     asd: {
-                        jkl: RG.getGuid()
+                        jkl: RG.guid
                     }
                 }
             };
@@ -115,7 +115,7 @@ describe('TestConfig', () => {
                 bar: {
                     baz: RG.getInt(9, 99),
                     asd: {
-                        jkl: RG.getGuid()
+                        jkl: RG.guid
                     }
                 }
             };

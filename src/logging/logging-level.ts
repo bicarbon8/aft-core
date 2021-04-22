@@ -9,7 +9,6 @@ export class LoggingLevel {
         if (this.logString.length < 5) {
             this.logString += ' ';
         }
-        this.logString += ' - ';
     }
 }
 

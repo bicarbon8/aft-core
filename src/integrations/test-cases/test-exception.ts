@@ -1,4 +1,4 @@
-import '../../extensions/string-extensions';
+import { SE } from '../../extensions/string-extensions';
 
 export class TestException {
     Type: string;
@@ -10,8 +10,8 @@ export class TestException {
             let message: string = this.removeBadCharacters(err.message);
             let stack: string = this.removeBadCharacters(err.stack);
 
-            let msg = (full) ? message : message.ellide(100);
-            let stk = (full) ? stack : stack.ellide(100);
+            let msg = (full) ? message : SE.ellide(message, 100);
+            let stk = (full) ? stack : SE.ellide(stack, 100);
 
             this.Type = err.name;
             this.Message = msg;

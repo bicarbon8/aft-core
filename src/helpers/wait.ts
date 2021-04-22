@@ -1,3 +1,5 @@
+import { Func } from "./func";
+
 export module Wait {
     /**
      * function will execute an asynchronous action and await a result repeating execution every 1 millisecond until a 
@@ -13,14 +15,16 @@ export module Wait {
         let startTime: number = new Date().getTime();
         let now: number;
         let elapsed: number;
-        let ex: ExceptionInformation;
+        let exMessage: string;
+        let exStack: string;
 
         do {
             try {
                 attempts++;
                 result = await Promise.resolve(condition());
             } catch (e) {
-                ex = e;
+                exMessage = (e as Error).message;
+                exStack = (e as Error).stack;
                 try {
                     if (onFailAction) {onFailAction();}
                 } catch {}
@@ -28,13 +32,13 @@ export module Wait {
             await Wait.forDuration(1);
             now = new Date().getTime();
             elapsed = now - startTime;
-        } while (!result && elapsed < msDuration);
+        } while (result !== true && elapsed < msDuration);
 
         if (result) {
             return Promise.resolve();
         }
             
-        return Promise.reject("unable to successfully execute condition: '" + condition.toString() + "' within '" + attempts + "' attempts due to: '" + ex + "'");
+        return Promise.reject(`unable to successfully execute Wait.forCondition(() => {...}) within '${attempts}' attempts due to: '${exMessage}' at:\n${exStack}`);
     }
 
     /**

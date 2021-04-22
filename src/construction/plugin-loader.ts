@@ -8,7 +8,7 @@ export module PluginLoader {
     }
 
     async function validatePlugin<T extends IPlugin>(pluginName: string): Promise<T> {
-        var plugin;
+        let plugin: T;
 
         try {
             plugin  = await import(pluginName);

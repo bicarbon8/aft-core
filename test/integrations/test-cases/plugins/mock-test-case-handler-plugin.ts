@@ -40,7 +40,7 @@ export class MockTestCaseHandlerPlugin implements ITestCaseHandlerPlugin {
                 return {obj: c2, success: true};
             default:
                 let c3: ITestCase = await this.getTestCase(testId);
-                return {obj: c3, message: RG.getString(22), success: RG.getBoolean()};
+                return {obj: c3, message: RG.getString(22), success: RG.boolean};
         }
     }
 }

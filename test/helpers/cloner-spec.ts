@@ -8,7 +8,7 @@ describe('Cloner', () => {
         let expected = {
             foo: RG.getString(7), 
             bar: RG.getInt(99, 999), 
-            baz: RG.getBoolean(),
+            baz: RG.boolean,
             bof: new Date()
         };
 
@@ -21,7 +21,7 @@ describe('Cloner', () => {
         let expected = {
             foo: RG.getString(7), 
             bar: RG.getInt(99, 999), 
-            baz: RG.getBoolean()
+            baz: RG.boolean
         };
 
         let actual = Cloner.clone(expected);
@@ -36,10 +36,10 @@ describe('Cloner', () => {
         let expected = {
             foo: RG.getString(7), 
             bar: RG.getInt(99, 999), 
-            baz: RG.getBoolean(),
+            baz: RG.boolean,
             bof: {
                 abc: RG.getFloat(1.1, 100),
-                def: RG.getGuid()
+                def: RG.guid
             }
         };
 
@@ -100,7 +100,7 @@ class FooTestCloneable implements ICloneable {
     constructor() {
         this.foo = RG.getString(14);
         this.bar = RG.getInt(0, 9);
-        this.baz = RG.getBoolean();
+        this.baz = RG.boolean;
     }
 
     clone(): object {

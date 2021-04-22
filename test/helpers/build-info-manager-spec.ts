@@ -2,7 +2,7 @@ import { BuildInfoManager, IBuildInfoHandlerPlugin } from "../../src";
 
 describe('BuildInfoManager', () => {
     it('can load a specified IBuildInfoHandlerPlugin', async () => {
-        let manager: BuildInfoManager = new BuildInfoManager({pluginName: './dist/test/helpers/mock-build-info-handler-plugin'});
+        let manager: BuildInfoManager = new BuildInfoManager({pluginName: './dist/aft-core/test/helpers/mock-build-info-handler-plugin'});
         let actual: IBuildInfoHandlerPlugin = await manager.getPlugin();
         
         expect(actual).toBeDefined();

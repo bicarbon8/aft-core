@@ -3,15 +3,16 @@ import { Func } from "../helpers/func";
 import { TestWrapperOptions } from "./test-wrapper-options";
 import { TestStatus } from "../integrations/test-cases/test-status";
 import { ITestResult } from "../integrations/test-cases/itest-result";
-import '../extensions/string-extensions';
 import { Convert } from "../helpers/convert";
 import { ProcessingResult } from "../helpers/processing-result";
 import { TestCaseManager } from "../integrations/test-cases/test-case-manager";
 import { IDefect } from "../integrations/defects/idefect";
 import { DefectManager } from "../integrations/defects/defect-manager";
 import { DefectStatus } from "../integrations/defects/defect-status";
-import { RandomGenerator, RG } from "../helpers/random-generator";
+import { RG } from "../helpers/random-generator";
 import { BuildInfoManager } from "../helpers/build-info-manager";
+import { Cloner } from "../helpers/cloner";
+import { SE } from "../extensions/string-extensions";
 
 /**
  * provides pre-test execution filtering based on specified 
@@ -19,7 +20,7 @@ import { BuildInfoManager } from "../helpers/build-info-manager";
  * is intended to be managed through the `should(expectation, options)`
  * function via:
  * ```
- * should(() => expect(true).toBeTruthy(), {description: 'expect true is truthy'});
+ * await should(() => expect(true).toBeTruthy(), {description: 'expect true is truthy'});
  * ```
  */
 export class TestWrapper {
@@ -42,55 +43,55 @@ export class TestWrapper {
      * `'foo' == 'foo'` where the function either accepts no arguments or one argument of type `TestWrapper`
      * ex:
      * ```
-     * let tw: TestWrapper = new TestWrapper((t) => {
+     * let tw: TestWrapper = new TestWrapper(async (t) => {
      *     await t.logger().info("using the TestWrapper's logger");
      *     let foo = 'foo';
-     *     return foo == 'foo';
+     *     expect(foo).toEqual('foo');
      * });
      * await tw.run();
      * ```
-     * @param options optional `ITestWrapperOptions` allowing test IDs, defect IDs and a `description` to be passed in
+     * @param options optional `TestWrapperOptions` allowing test IDs, defect IDs and a `description` to be passed in
      */
-    constructor(expectation: Func<TestWrapper, any>, options?: TestWrapperOptions) {
-        this._expectation = expectation;
+    constructor(options: TestWrapperOptions) {
+        this._expectation = options.expect;
         
-        this._initialiseName(options);
+        this._initialiseDescription(options);
         this._initialiseLogger(options);
         this._initialiseTestCases(options);
         this._initialiseDefects(options);
         this._initialiseBuildInfo(options);
     }
 
-    expectation(): Func<TestWrapper, any> {
+    get expectation(): Func<TestWrapper, any> {
         return this._expectation;
     }
 
-    description(): string {
+    get description(): string {
         return this._description;
     }
 
-    logger(): TestLog {
+    get logger(): TestLog {
         return this._logger;
     }
 
-    testCases(): string[] {
-        return this._testCases;
+    get testCases(): string[] {
+        return Cloner.clone(this._testCases);
     }
 
-    defects(): string[] {
-        return this._defects;
+    get defects(): string[] {
+        return Cloner.clone(this._defects);
     }
 
-    errors(): string[] {
-        return this._errors;
+    get errors(): string[] {
+        return Cloner.clone(this._errors);
     }
 
-    startTime(): number {
+    get startTime(): number {
         return this._startTime;
     }
 
-    loggedCases(): string[] {
-        return this._loggedCases;
+    get loggedCases(): string[] {
+        return Cloner.clone(this._loggedCases);
     }
     
     /**
@@ -106,36 +107,38 @@ export class TestWrapper {
         return result;
     }
 
-    private _initialiseName(options?: TestWrapperOptions): void {
-        this._description = options?.description;
-        if (!this._description && options?.testCases?.length > 0) {
-            this._description = `Tests [${options?.testCases?.join(',')}]`
-        }
-        if (!this._description) {
-            this._description = `TestWrapper_${RandomGenerator.getGuid()}`;
+    private _initialiseDescription(options: TestWrapperOptions): void {
+        if (options.description) {
+            this._description = options.description;
+        } else {
+            if (options.testCases?.length) {
+                this._description = `${options.testCases?.join(' ')}`
+            } else {
+                this._description = RG.guid;
+            }
         }
     }
 
-    private _initialiseLogger(options?: TestWrapperOptions): void {
-        this._logger = options?.logger || new TestLog({name: this.description()});
+    private _initialiseLogger(options: TestWrapperOptions): void {
+        this._logger = options.logger || new TestLog({name: this.description});
     }
 
-    private _initialiseTestCases(options?: TestWrapperOptions): void {
-        this._testCaseManager = options?.testCaseManager || TestCaseManager.instance();
-        options?.testCases?.forEach(c => {
-            this.testCases().push(c);
+    private _initialiseTestCases(options: TestWrapperOptions): void {
+        this._testCaseManager = options.testCaseManager || TestCaseManager.instance();
+        options.testCases?.forEach(c => {
+            this._testCases.push(c);
         });
     }
 
-    private _initialiseDefects(options?: TestWrapperOptions): void {
-        this._defectManager = options?.defectManager || DefectManager.instance();
-        options?.defects?.forEach(d => {
-            this.defects().push(d);
+    private _initialiseDefects(options: TestWrapperOptions): void {
+        this._defectManager = options.defectManager || DefectManager.instance();
+        options.defects?.forEach(d => {
+            this._defects.push(d);
         });
     }
 
-    private _initialiseBuildInfo(options?: TestWrapperOptions) {
-        this._buildInfoManager = options?.buildInfoManager || BuildInfoManager.instance();
+    private _initialiseBuildInfo(options: TestWrapperOptions) {
+        this._buildInfoManager = options.buildInfoManager || BuildInfoManager.instance();
     }
 
     /**
@@ -146,30 +149,34 @@ export class TestWrapper {
      */
     private async _logResult(result: ProcessingResult): Promise<void> {
         let status: TestStatus = result.obj as TestStatus || TestStatus.Untested;
-        let message: string = `${TestStatus[status]} - ${result.message || ''}`;
-        if (this.testCases().length > 0) {
-            for (var i=0; i<this.testCases().length; i++) {
-                let testId: string = this.testCases()[i];
-                await this._logMessage(status, `${testId} ${message}`);
+        let message: string = result.message;
+        if (this._testCases.length > 0) {
+            for (var i=0; i<this._testCases.length; i++) {
+                let testId: string = this._testCases[i];
+                if (message) {
+                    await this._logMessage(status, `${testId} - ${message}`);
+                } else {
+                    await this._logMessage(status, testId);
+                }
             }
         } else {
             await this._logMessage(status, message);
         }
 
-        let results: ITestResult[] = await this._generateTestResults(status, message, ...this.testCases());
+        let results: ITestResult[] = await this._generateTestResults(status, message, ...this._testCases);
         for (var i=0; i<results.length; i++) {
             let result: ITestResult = results[i];
             try {
-                await this.logger().logResult(result);
+                await this._logger.logResult(result);
                 if (result.testId) {
                     this._loggedCases.push(result.testId);
                 }
             } catch (e) {
-                await this.logger().warn(`unable to log test result for test '${result.testId || result.resultId}' due to: ${e}`);
+                await this._logger.warn(`unable to log test result for test '${result.testId || result.resultId}' due to: ${e}`);
             }
         }
 
-        this.logger().finalise();
+        this.logger.finalise();
     }
 
     private async _logMessage(status: TestStatus, message: string): Promise<void> {
@@ -178,14 +185,14 @@ export class TestWrapper {
             case TestStatus.Retest:
             case TestStatus.Skipped:
             case TestStatus.Untested:
-                await this.logger().warn(message);
+                await this.logger.warn(message);
                 break;
             case TestStatus.Failed:
-                await this.logger().fail(message);
+                await this.logger.fail(message);
                 break;
             case TestStatus.Passed:
             default:
-                await this.logger().pass(message);
+                await this.logger.pass(message);
                 break;
         }
     }
@@ -220,7 +227,7 @@ export class TestWrapper {
             message = 'no test expectation supplied so nothing could be tested';
         }
         if (message) {
-            this.errors().push(message);
+            this._errors.push(message);
         }
         return {obj: status, message: message, success: status == TestStatus.Passed};
     }
@@ -298,8 +305,8 @@ export class TestWrapper {
         let result: ITestResult = {
             testId: testId,
             created: new Date(),
-            resultId: RG.getGuid(),
-            resultMessage: logMessage.ellide(100),
+            resultId: RG.guid,
+            resultMessage: (logMessage) ? SE.ellide(logMessage, 100) : undefined,
             status: status,
             metadata: {
                 durationMs: Convert.toElapsedMs(this._startTime),
@@ -308,8 +315,8 @@ export class TestWrapper {
                 buildNumber: await this._buildInfoManager.getBuildNumber() || 'unknown'
             }
         };
-        if (this.errors().length > 0) {
-            let exceptionsStr: string = this.errors().join('\n');
+        if (this._errors.length > 0) {
+            let exceptionsStr: string = this._errors.join('\n');
             result.metadata['errors'] = exceptionsStr;
         }
         return result;
