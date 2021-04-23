@@ -7,7 +7,7 @@ describe('Sample Test', () => {
     it('can perform a demonstration of AFT-Core', async () => {
         let feature: FeatureObj = new FeatureObj();
         /**
-         * the `should(expectation, options)` function
+         * the `should(options)` function
          * checks any specified `ITestCaseHandlerPlugin`
          * and `IDefectHandlerPlugin` implementations
          * to ensure the test should be run. It will then
@@ -15,8 +15,7 @@ describe('Sample Test', () => {
          * with a `TestResult` indicating the success,
          * failure or skipped status
          */
-        await should(() => expect(feature.performAction()).toBe('result of action'), 
-        {
+        await should({expect: () => expect(feature.performAction()).toBe('result of action'),
             testCases: ['C1234'], 
             description: 'expect that performAction will return \'result of action\''
         });
@@ -25,7 +24,7 @@ describe('Sample Test', () => {
 ```
 the above results in the following console output if the expectation does not return false or throw an exception:
 ```
-5:29:55 PM PASS  - [expect_that_performAction_will_return_result_of_action] C1234 Passed -
+5:29:55 PM - expect_that_performAction_will_return_result_of_action - PASS  - C1234
 ```
 in more complex scenarios you can perform multiple actions inside the _expectation_ like in the following example:
 ```typescript
@@ -36,14 +35,15 @@ describe('Sample Test', () => {
          * the passed in expectation can accept a `TestWrapper` which can be used
          * during more complex actions
          */
-        await should(async (tw) => {
-            await tw.logger.step('about to call performAction');
-            let result: string = feature.performAction();
-            await tw.logger.info(`result of performAction was '${result}'`);
-            expect(result).toBe('result of action');
-            await tw.logger.trace('successfully executed expectation');
-        },
-        {
+        await should({
+            expect: async (tw) => {
+                await tw.logger.step('about to call performAction');
+                let result: string = feature.performAction();
+                await tw.logger.info(`result of performAction was '${result}'`);
+                let success: boolean = expect(result).toBe('result of action');
+                await tw.logger.trace('successfully executed expectation');
+                return success;
+            },
             testCases: ['C2345', 'C3344'], 
             description: 'more complex expectation actions'
         });
@@ -52,14 +52,14 @@ describe('Sample Test', () => {
 ```
 which would output the following logs
 ```
-5:29:55 PM STEP  - [more_complex_expectation_actions] 1: about to call performAction
-5:29:55 PM INFO  - [more_complex_expectation_actions] result of performAction was 'result of action'
-5:29:56 PM TRACE - [more_complex_expectation_actions] successfully executed expectation
-5:29:56 PM PASS  - [more_complex_expectation_actions] Passed C2345 -
-5:29:56 PM PASS  - [more_complex_expectation_actions] Passed C3344 -
+5:29:55 PM - more_complex_expectation_actions - STEP  - 1: about to call performAction
+5:29:55 PM - more_complex_expectation_actions - INFO  - result of performAction was 'result of action'
+5:29:56 PM - more_complex_expectation_actions - TRACE - successfully executed expectation
+5:29:56 PM - more_complex_expectation_actions - PASS  - C2345
+5:29:56 PM - more_complex_expectation_actions - PASS  - C3344
 ```
 ## Benefits of AFT
-the AFT-Core package on it's own contains some helpers for testing, but the actual benefit comes from the plugins. Because the above logging will also send to any registered logging plugins, it becomes easy to create loggers that send to any external system such as TestRail or to log results to Elasticsearch. Additionally, before running any _expectation_ passed to a `should(expectation, options)` function, AFT will confirm if the expectation should actually be run based on the results of a query to any supplied `ITestCaseHandlerPlugin` implementations and a subsequent query to any supplied `IDefectHandlerPlugin` implementations. 
+the AFT-Core package on it's own contains some helpers for testing, but the actual benefit comes from the plugins. Because the above logging will also send to any registered logging plugins, it becomes easy to create loggers that send to any external system such as TestRail or to log results to Elasticsearch. Additionally, before running any _expectation_ passed to a `should(options)` function, AFT will confirm if the expectation should actually be run based on the results of a query to any supplied `ITestCasePlugin` implementations and a subsequent query to any supplied `IDefectPlugin` implementations. 
 ### Logging Plugin
 to create a logging plugin you simply need to implment the `ILoggingPlugin` interface in a class with a constructor accepting no arguments. Then, in your `aftconfig.json` add the following (where your `ILoggingPlugin` implementations are contained in files at `./relative/path/to/logging-plugin1.ts` and `/full/path/to/logging-plugin2.ts`):
 ```json
@@ -102,11 +102,11 @@ export class ExternalLogger implements ILoggingPlugin {
     }
 }
 ```
-### Test Case Handler Plugin
-the purpose of an `ITestCaseHandlerPlugin` is to provide execution control over any expectations by way of supplied _Test IDs_. to specify an implementation of the plugin to load you can add the following to your `aftconfig.json` (where the plugin can be found in a file called `plugin.ts` at relative path `./path/to`):
+### Test Case Plugin
+the purpose of an `ITestCasePlugin` is to provide execution control over any expectations by way of supplied _Test IDs_. to specify an implementation of the plugin to load you can add the following to your `aftconfig.json` (where the plugin can be found in a file called `plugin.ts` at relative path `./path/to`):
 ```json
 {
-    "testCaseManager": {
+    "testcasepluginmanager": {
         "pluginName": "./path/to/plugin"
     }
 }
@@ -115,10 +115,10 @@ if no plugin is specified then external Test Case Management integration will be
 ```
 NOTE: if the plugin is referenced as an external npm package you may leave off the path and just reference by package name
 ```
-#### Example Test Case Handler Plugin (TestRail)
+#### Example Test Case Plugin (TestRail)
 ```typescript
-export class MockTestCaseHandlerPlugin implements ITestCaseHandlerPlugin {
-    name: string = 'testrail-test-case-handler-plugin';
+export class MockTestCasePlugin implements ITestCasePlugin {
+    name: string = 'testrail-test-case-plugin';
     private testRailApi: TestRailClient;
     constructor(): void {
         this.testRailApi = new TestRailClient();
@@ -144,11 +144,11 @@ export class MockTestCaseHandlerPlugin implements ITestCaseHandlerPlugin {
     }
 }
 ```
-### Defect Handler Plugin
-the purpose of an `IDefectHandlerPlugin` is to provide execution control over any expectations by way of supplied _Test IDs_ referenced in an external ticket tracking system like Bugzilla or Jira. to specify an implementation of the plugin to load you can add the following to your `aftconfig.json` (where the plugin can be found in a file called `plugin.ts` at relative path `./path/to`):
+### Defect Plugin
+the purpose of an `IDefectPlugin` is to provide execution control over any expectations by way of supplied _Test IDs_ referenced in an external ticket tracking system like Bugzilla or Jira. to specify an implementation of the plugin to load you can add the following to your `aftconfig.json` (where the plugin can be found in a file called `plugin.ts` at relative path `./path/to`):
 ```json
 {
-    "defectManager": {
+    "defectpluginmanager": {
         "pluginName": "./path/to/plugin"
     }
 }
@@ -157,10 +157,10 @@ if no plugin is specified then external Defect Management integration will be di
 ```
 NOTE: if the plugin is referenced as an external npm package you may leave off the path and just reference by package name
 ```
-#### Example Defect Handler Plugin (Bugzilla)
+#### Example Defect Plugin (Bugzilla)
 ```typescript
-export class MockDefectHandlerPlugin implements IDefectHandlerPlugin {
-    name: string = 'bugzilla-defect-handler-plugin';
+export class MockDefectPlugin implements IDefectPlugin {
+    name: string = 'bugzilla-defect-plugin';
     private bugzillaApi: BugzillaClient;
     constructor(): void {
         this.bugzillaApi = new BugzillaClient();

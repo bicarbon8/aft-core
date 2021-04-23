@@ -1,6 +1,6 @@
-import { Func } from "./func";
+import { Func } from "./custom-types";
 
-export module Wait {
+export class Wait {
     /**
      * function will execute an asynchronous action and await a result repeating execution every 1 millisecond until a 
      * result of 'true' is returned or the 'msDuration' specified has elapsed. If the action never returns 'true' and 
@@ -9,7 +9,7 @@ export module Wait {
      * @param msDuration the maximum amount of time to wait for the 'condition' to return 'true'
      * @param onFailAction an action to perform on each attempt resulting in failure ('Error' or 'false') of the 'condition'
      */
-    export async function forCondition(condition: () => boolean | PromiseLike<boolean>, msDuration: number, onFailAction?: Function) : Promise<void> {
+    async untilTrue(condition: Func<void, boolean | PromiseLike<boolean>>, msDuration: number, onFailAction?: Func<void, any>) : Promise<void> {
         let result: boolean = false;
         let attempts: number = 0;
         let startTime: number = new Date().getTime();
@@ -29,7 +29,7 @@ export module Wait {
                     if (onFailAction) {onFailAction();}
                 } catch {}
             }
-            await Wait.forDuration(1);
+            await this.forDuration(1);
             now = new Date().getTime();
             elapsed = now - startTime;
         } while (result !== true && elapsed < msDuration);
@@ -45,9 +45,11 @@ export module Wait {
      * function will wait for the specified amount of time
      * @param msDuration the amount of time to wait before resuming
      */
-    export async function forDuration(msDuration: number): Promise<void> {
+    async forDuration(msDuration: number): Promise<void> {
         return new Promise((resolve) => {
             setTimeout(resolve, msDuration);
         });
     }
 }
+
+export const wait = new Wait();

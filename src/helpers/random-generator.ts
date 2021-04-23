@@ -62,4 +62,4 @@ export class RandomGenerator {
     }
 }
 
-export const RG = new RandomGenerator();
+export const rand = new RandomGenerator();

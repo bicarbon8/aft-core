@@ -1,4 +1,4 @@
-import { DefectStatus, IDefect, ProcessingResult, TestLog, TestWrapperOptions, TestWrapper, TestCaseManager, DefectManager, RG } from "../../src";
+import { DefectStatus, IDefect, ProcessingResult, Logger, TestWrapperOptions, TestWrapper, TestCasePluginManager, DefectPluginManager, rand } from "../../src";
 
 let consoleLog = console.log;
 describe('TestWrapper', () => {
@@ -16,7 +16,7 @@ describe('TestWrapper', () => {
         });
         
         expect(tw.logger).toBeDefined();
-        expect(await tw.logger.name()).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+        expect(await tw.logger.name()).toMatch(/^[0-9a-f]{8}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{12}$/i);
     });
 
     it('uses \'description\' as logger name if provided in options', async () => {
@@ -56,7 +56,7 @@ describe('TestWrapper', () => {
     });
 
     it('will log success result for passed in testIds on successful completion', async () => {
-        let logger: TestLog = new TestLog({pluginNames: []});
+        let logger: Logger = new Logger({pluginNames: []});
         spyOn(logger, 'pass').and.callThrough();
         let options: TestWrapperOptions = {
             expect: () => expect(false).toBeFalsy(),
@@ -71,7 +71,7 @@ describe('TestWrapper', () => {
     });
 
     it('will log failed result for passed in testIds on a failed completion', async () => {
-        let logger: TestLog = new TestLog({pluginNames: []});
+        let logger: Logger = new Logger({pluginNames: []});
         spyOn(logger, 'fail').and.callThrough();
         let options: TestWrapperOptions = {
             expect: () => false,
@@ -86,7 +86,7 @@ describe('TestWrapper', () => {
     });
 
     it('treats exceptions in the expectation as a failure', async () => {
-        let logger: TestLog = new TestLog({pluginNames: []});
+        let logger: Logger = new Logger({pluginNames: []});
         spyOn(logger, 'fail').and.callThrough();
         let options: TestWrapperOptions = {
             expect: () => {
@@ -106,7 +106,7 @@ describe('TestWrapper', () => {
         let options: TestWrapperOptions = {
             expect: () => notExpected = true,
             testCases: ['C1234', 'C2345'], 
-            testCaseManager: new TestCaseManager()
+            testCaseManager: new TestCasePluginManager()
         };
         let notExpected: boolean = false;
         let tw: TestWrapper = new TestWrapper(options);
@@ -125,7 +125,7 @@ describe('TestWrapper', () => {
         let options: TestWrapperOptions = {
             expect: () => notExpected = true,
             testCases: ['C1234', 'C2345'], 
-            testCaseManager: new TestCaseManager()
+            testCaseManager: new TestCasePluginManager()
         };
         let notExpected: boolean = false;
         let tw: TestWrapper = new TestWrapper(options);
@@ -148,7 +148,7 @@ describe('TestWrapper', () => {
         let options: TestWrapperOptions = {
             expect: () => notExpected = true,
             defects: ['AUTO-123', 'AUTO-222'], 
-            defectManager: new DefectManager()
+            defectManager: new DefectPluginManager()
         };
         let notExpected: boolean = false;
         let tw: TestWrapper = new TestWrapper(options);
@@ -175,7 +175,7 @@ describe('TestWrapper', () => {
         let options: TestWrapperOptions = {
             expect: () => notExpected = true,
             defects: ['AUTO-123', 'AUTO-222'],
-            defectManager: new DefectManager()
+            defectManager: new DefectPluginManager()
         };
         let notExpected: boolean = false;
         let tw: TestWrapper = new TestWrapper(options);
@@ -197,7 +197,7 @@ describe('TestWrapper', () => {
         let options: TestWrapperOptions = {
             expect: () => notExpected = true,
             testCases: ['C1234', 'C2345'],
-            defectManager: new DefectManager()
+            defectManager: new DefectPluginManager()
         };
         let notExpected: boolean = false;
         let tw: TestWrapper = new TestWrapper(options);
@@ -214,5 +214,38 @@ describe('TestWrapper', () => {
         expect(options.defectManager.findDefects).toHaveBeenCalledWith('C1234');
         expect(options.defectManager.findDefects).not.toHaveBeenCalledWith('C2345');
         expect(notExpected).toBeFalsy();
+    });
+
+    it('does not allow modification to the testCases array once initialised', async () => {
+        let options: TestWrapperOptions = {expect: ()=> true, testCases: ['C1234']};
+        let tw: TestWrapper = new TestWrapper(options);
+
+        tw.testCases.push('C2345');
+        tw.testCases[0] = 'C2345';
+
+        expect(tw.testCases.length).toBe(1);
+        expect(tw.testCases).not.toContain('C2345');
+        expect(tw.testCases).toContain('C1234');
+    });
+
+    it('does not allow modification to the defects array once initialised', async () => {
+        let options: TestWrapperOptions = {expect: ()=> true, defects: ['JIRA-1234']};
+        let tw: TestWrapper = new TestWrapper(options);
+
+        tw.defects.push('JIRA-2345');
+        tw.defects[0] = 'JIRA-2345';
+
+        expect(tw.defects.length).toBe(1);
+        expect(tw.defects).not.toContain('JIRA-2345');
+        expect(tw.defects).toContain('JIRA-1234');
+    });
+
+    it('does not allow modification to the errors array once initialised', async () => {
+        let options: TestWrapperOptions = {expect: ()=> true};
+        let tw: TestWrapper = new TestWrapper(options);
+
+        tw.errors.push('fake error');
+
+        expect(tw.errors.length).toBe(0);
     });
 });

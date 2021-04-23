@@ -1,6 +1,5 @@
 import { ProcessingResult } from "../helpers/processing-result";
-import { TestWrapperOptions } from "./test-wrapper-options";
-import { TestWrapper } from "./test-wrapper";
+import { TestWrapper, TestWrapperOptions } from "./test-wrapper";
 
 /**
  * function creates a new TestWrapper that can be used like:

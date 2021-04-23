@@ -1,18 +1,28 @@
-import { TestLog } from "../logging/test-log";
-import { Func } from "../helpers/func";
-import { TestWrapperOptions } from "./test-wrapper-options";
-import { TestStatus } from "../integrations/test-cases/test-status";
-import { ITestResult } from "../integrations/test-cases/itest-result";
-import { Convert } from "../helpers/convert";
+import { cloneDeep } from "lodash";
+import { Logger } from "../logging/logger";
+import { TestStatus } from "../test-cases/test-status";
+import { ITestResult } from "../test-cases/itest-result";
+import { convert } from "../helpers/converter";
 import { ProcessingResult } from "../helpers/processing-result";
-import { TestCaseManager } from "../integrations/test-cases/test-case-manager";
-import { IDefect } from "../integrations/defects/idefect";
-import { DefectManager } from "../integrations/defects/defect-manager";
-import { DefectStatus } from "../integrations/defects/defect-status";
-import { RG } from "../helpers/random-generator";
-import { BuildInfoManager } from "../helpers/build-info-manager";
-import { Cloner } from "../helpers/cloner";
-import { SE } from "../extensions/string-extensions";
+import { TestCasePluginManager } from "../plugins/test-cases/test-case-plugin-manager";
+import { IDefect } from "../defects/idefect";
+import { DefectStatus } from "../defects/defect-status";
+import { rand } from "../helpers/random-generator";
+import { ellide } from "../helpers/ellide";
+import { DefectPluginManager } from "../plugins/defects/defect-plugin-manager";
+import { BuildInfoPluginManager } from "../plugins/build-info/build-info-plugin-manager";
+import { Func } from "../helpers/custom-types";
+
+export interface TestWrapperOptions {
+    expect: Func<TestWrapper, boolean | PromiseLike<boolean>>;
+    buildInfoManager?: BuildInfoPluginManager;
+    defects?: string[];
+    defectManager?: DefectPluginManager;
+    logger?: Logger;
+    testCases?: string[];
+    testCaseManager?: TestCasePluginManager;
+    description?: string;
+}
 
 /**
  * provides pre-test execution filtering based on specified 
@@ -26,15 +36,14 @@ import { SE } from "../extensions/string-extensions";
 export class TestWrapper {
     private _expectation: Func<TestWrapper, any>;
     private _description: string;
-    private _logger: TestLog;
+    private _logger: Logger;
     private _testCases: string[] = [];
     private _defects: string[] = [];
     private _errors: string[] = [];
     private _startTime: number;
-    private _loggedCases: string[] = [];
-    private _testCaseManager: TestCaseManager = null;
-    private _defectManager: DefectManager = null;
-    private _buildInfoManager: BuildInfoManager = null;
+    private _testCaseManager: TestCasePluginManager = null;
+    private _defectManager: DefectPluginManager = null;
+    private _buildInfoManager: BuildInfoPluginManager = null;
 
     /**
      * this class is intended to be utilised via the `should(expectation, options)` function
@@ -70,28 +79,24 @@ export class TestWrapper {
         return this._description;
     }
 
-    get logger(): TestLog {
+    get logger(): Logger {
         return this._logger;
     }
 
     get testCases(): string[] {
-        return Cloner.clone(this._testCases);
+        return cloneDeep(this._testCases);
     }
 
     get defects(): string[] {
-        return Cloner.clone(this._defects);
+        return cloneDeep(this._defects);
     }
 
     get errors(): string[] {
-        return Cloner.clone(this._errors);
+        return cloneDeep(this._errors);
     }
 
     get startTime(): number {
         return this._startTime;
-    }
-
-    get loggedCases(): string[] {
-        return Cloner.clone(this._loggedCases);
     }
     
     /**
@@ -114,31 +119,31 @@ export class TestWrapper {
             if (options.testCases?.length) {
                 this._description = `${options.testCases?.join(' ')}`
             } else {
-                this._description = RG.guid;
+                this._description = rand.guid;
             }
         }
     }
 
     private _initialiseLogger(options: TestWrapperOptions): void {
-        this._logger = options.logger || new TestLog({name: this.description});
+        this._logger = options.logger || new Logger({name: this.description});
     }
 
     private _initialiseTestCases(options: TestWrapperOptions): void {
-        this._testCaseManager = options.testCaseManager || TestCaseManager.instance();
+        this._testCaseManager = options.testCaseManager || TestCasePluginManager.instance();
         options.testCases?.forEach(c => {
             this._testCases.push(c);
         });
     }
 
     private _initialiseDefects(options: TestWrapperOptions): void {
-        this._defectManager = options.defectManager || DefectManager.instance();
+        this._defectManager = options.defectManager || DefectPluginManager.instance();
         options.defects?.forEach(d => {
             this._defects.push(d);
         });
     }
 
     private _initialiseBuildInfo(options: TestWrapperOptions) {
-        this._buildInfoManager = options.buildInfoManager || BuildInfoManager.instance();
+        this._buildInfoManager = options.buildInfoManager || BuildInfoPluginManager.instance();
     }
 
     /**
@@ -168,9 +173,6 @@ export class TestWrapper {
             let result: ITestResult = results[i];
             try {
                 await this._logger.logResult(result);
-                if (result.testId) {
-                    this._loggedCases.push(result.testId);
-                }
             } catch (e) {
                 await this._logger.warn(`unable to log test result for test '${result.testId || result.resultId}' due to: ${e}`);
             }
@@ -305,11 +307,11 @@ export class TestWrapper {
         let result: ITestResult = {
             testId: testId,
             created: new Date(),
-            resultId: RG.guid,
-            resultMessage: (logMessage) ? SE.ellide(logMessage, 100) : undefined,
+            resultId: rand.guid,
+            resultMessage: (logMessage) ? ellide(logMessage, 100) : undefined,
             status: status,
             metadata: {
-                durationMs: Convert.toElapsedMs(this._startTime),
+                durationMs: convert.toElapsedMs(this._startTime),
                 statusStr: TestStatus[status],
                 buildName: await this._buildInfoManager.getBuildName() || 'unknown',
                 buildNumber: await this._buildInfoManager.getBuildNumber() || 'unknown'
