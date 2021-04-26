@@ -8,7 +8,7 @@ import { TestWrapper, TestWrapperOptions } from "./test-wrapper";
  * await should({expect: () => expect(false).toBeFalsy(), testCases: ['C1234'], description: 'expect false is always falsy'});
  * await should({expect: () => expect('foo').toBe('foo')});
  * await should({expect: (tw) => {
- *     await tw.logger().warn('foo');
+ *     await tw.logMgr().warn('foo');
  *     return expect('foo').not.toBe('bar')
  * }});
  * ```

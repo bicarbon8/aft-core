@@ -1,8 +1,11 @@
-import { nameof } from "ts-simple-nameof";
-import { IPlugin } from "./iplugin";
-import { OptionsManager } from "../configuration/options-manager";
-import { IPluginManagerOptions } from "./iplugin-manager-options";
+import { AbstractPlugin, IPluginOptions } from "./abstract-plugin";
 import { PluginLoader } from "./plugin-loader";
+import { nameof } from "ts-simple-nameof";
+import { OptionsManager } from "../configuration/options-manager";
+
+export interface IPluginManagerOptions {
+    pluginNames?: string[];
+}
 
 /**
  * helper base class for use by classes that load in and manage a plugin
@@ -23,8 +26,29 @@ import { PluginLoader } from "./plugin-loader";
  * }
  * ```
  */
-export abstract class AbstractPluginManager<T extends IPlugin, Tops> extends OptionsManager<Tops> {
+export abstract class AbstractPluginManager<T extends AbstractPlugin<Topts>, Topts extends IPluginOptions> {
     private _plugins: Map<string, T>;
+    private _opts: Topts;
+
+    readonly optionsMgr: OptionsManager;
+
+    constructor(key: string, options?: Topts) {
+        this._opts = options;
+        this.optionsMgr = new OptionsManager(key, this._opts);
+    }
+
+    async getFirstEnabledPlugin(): Promise<T> {
+        let plugins: T[] = await this.getPlugins();
+        if (plugins?.length) {
+            for (var i=0; i<plugins.length; i++) {
+                let p: T = plugins[i];
+                if (await p.enabled()) {
+                    return p;
+                }
+            }
+        }
+        return null;
+    }
 
     /**
      * loads the plugin that is specified either in the options passed
@@ -33,24 +57,23 @@ export abstract class AbstractPluginManager<T extends IPlugin, Tops> extends Opt
      * to the plugin to be loaded. if no plugin is specified then nothing will
      * be loaded and `undefined` is returned
      */
-    async getPlugins(options?: Tops): Promise<T[]> {
-        if (!options) {
-            options = this._options;
-        }
+    async getPlugins(): Promise<T[]> {
         if (!this._plugins) {
-            await this._loadPlugins(options);
+            await this._loadPlugins();
         }
         return Array.from(this._plugins.values());
     }
 
-    private async _loadPlugins(options?: Tops): Promise<void> {
+    private async _loadPlugins(): Promise<void> {
         this._plugins = new Map<string, T>();
-        let pNames: string[] = await this.getOption<string[]>(nameof<IPluginManagerOptions>(p => p.pluginNames));
+        let pNames: string[] = await this.optionsMgr.getOption<string[]>(nameof<IPluginManagerOptions>(p => p.pluginNames));
         if (pNames?.length) {
             for (var i=0; i<pNames.length; i++) {
                 let name: string = pNames[i];
-                let p: T = await PluginLoader.load<T>(name, options);
-                this._plugins.set(p.name, p);
+                let p: T = await PluginLoader.load<T>(name, this._opts);
+                if (p) {
+                    this._plugins.set(p.constructor.name.toLowerCase(), p);
+                }
             }
         }
     }

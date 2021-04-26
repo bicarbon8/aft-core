@@ -1,11 +1,11 @@
-import { AbstractPluginManager } from "../abstract-plugin-manager";
-import { Logger } from "../../logging/logger";
+import { AbstractPluginManager, IPluginManagerOptions } from "../abstract-plugin-manager";
+import { LoggingPluginManager } from "../logging/logging-plugin-manager";
 import { IDefect } from "../../defects/idefect";
-import { IDefectPlugin } from "./idefect-plugin";
-import { IPluginManagerOptions } from "../iplugin-manager-options";
+import { AbstractDefectPlugin, IDefectPluginOptions } from "./abstract-defect-plugin";
+import { nameof } from "ts-simple-nameof";
 
-export interface DefectPluginManagerOptions extends IPluginManagerOptions {
-    logger?: Logger;
+export interface IDefectPluginManagerOptions extends IDefectPluginOptions, IPluginManagerOptions {
+    logMgr?: LoggingPluginManager;
 }
 
 /**
@@ -15,48 +15,36 @@ export interface DefectPluginManagerOptions extends IPluginManagerOptions {
  * {
  *   ...
  *   "defectpluginmanager": {
- *     "pluginName": "plugin-name"
+ *     "pluginNames": ["plugin-name"]
  *   }
  *   ...
  * }
  * ```
  */
-export class DefectPluginManager extends AbstractPluginManager<IDefectPlugin, DefectPluginManagerOptions> {
-    private _logger: Logger;
+export class DefectPluginManager extends AbstractPluginManager<AbstractDefectPlugin, IDefectPluginOptions> {
+    private _logMgr: LoggingPluginManager;
 
-    constructor(options?: DefectPluginManagerOptions) {
-        super(options);
-        this._logger = options?.logger || new Logger({name: 'DefectManager', pluginNames: []});
+    constructor(options?: IDefectPluginManagerOptions) {
+        super(nameof(DefectPluginManager).toLowerCase(), options);
+        this._logMgr = options?.logMgr || new LoggingPluginManager({name: nameof(DefectPluginManager), pluginNames: []});
     }
     
     async getDefect(defectId: string): Promise<IDefect> {
-        return await this.getPlugins()
-        .then(async (plugins: IDefectPlugin[]) => {
-            for (var i=0; i<plugins.length; i++) {
-                let p: IDefectPlugin = plugins[i];
-                if (p && await p.isEnabled()) {
-                    return await p.getDefect(defectId);
-                }
-            }
-            return null;
+        return await this.getFirstEnabledPlugin()
+        .then(async (plugin: AbstractDefectPlugin) => {
+            return await plugin?.getDefect(defectId);
         }).catch(async (err) => {
-            await this._logger.warn(err);
+            await this._logMgr.warn(err);
             return null;
         });
     }
 
     async findDefects(searchTerm: string): Promise<IDefect[]> {
-        return await this.getPlugins()
-        .then(async (plugins: IDefectPlugin[]) => {
-            for (var i=0; i<plugins.length; i++) {
-                let p: IDefectPlugin = plugins[i];
-                if (p && await p.isEnabled()) {
-                    return await p.findDefects(searchTerm);
-                }
-            }
-            return [];
+        return await this.getFirstEnabledPlugin()
+        .then(async (plugin: AbstractDefectPlugin) => {
+            return await plugin?.findDefects(searchTerm) || [];
         }).catch(async (err) => {
-            await this._logger.warn(err);
+            await this._logMgr.warn(err);
             return [];
         });
     }

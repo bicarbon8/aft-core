@@ -1,12 +1,12 @@
-import { IBuildInfoPlugin, rand } from "../../../src";
+import { nameof } from "ts-simple-nameof";
+import { AbstractBuildInfoPlugin, IBuildInfoPluginOptions, rand } from "../../../src";
 
-export class MockBuildInfoPlugin implements IBuildInfoPlugin {
-    name: string = 'mock-build-info-plugin';
-    async isEnabled(): Promise<boolean> {
-        return true;
+export class MockBuildInfoPlugin extends AbstractBuildInfoPlugin {
+    constructor(options?: IBuildInfoPluginOptions) {
+        super(nameof(MockBuildInfoPlugin).toLowerCase(), options);
     }
     async onLoad(): Promise<void> {
-        /* do something */
+        /* do nothing */
     }
     async getBuildName(): Promise<string> {
         return `MockBuildName-${rand.getInt(0, 99)}`;

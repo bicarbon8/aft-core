@@ -21,8 +21,8 @@ describe('AFT', () => {
                 let count: number = 10;
                 let result: boolean = true;
                 for (var i=0; i<count; i++) {
-                    await tw.logger.info(`running count: ${i}`);
-                    await tw.logger.warn(`random string: ${rand.getString()}`);
+                    await tw.logMgr.info(`running count: ${i}`);
+                    await tw.logMgr.warn(`random string: ${rand.getString()}`);
                     result = result && expect(i).not.toBeNaN();
                 }
                 return result;

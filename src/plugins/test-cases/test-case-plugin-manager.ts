@@ -1,12 +1,12 @@
-import { AbstractPluginManager } from "../abstract-plugin-manager";
+import { AbstractPluginManager, IPluginManagerOptions } from "../abstract-plugin-manager";
 import { ProcessingResult } from "../../helpers/processing-result";
-import { Logger } from "../../logging/logger";
+import { LoggingPluginManager } from "../logging/logging-plugin-manager";
 import { ITestCase } from "../../test-cases/itest-case";
-import { ITestCasePlugin } from "./itest-case-plugin";
-import { IPluginManagerOptions } from "../iplugin-manager-options";
+import { AbstractTestCasePlugin, ITestCasePluginOptions } from "./abstract-test-case-plugin";
+import { nameof } from "ts-simple-nameof";
 
-export interface TestCasePluginManagerOptions extends IPluginManagerOptions {
-    logger?: Logger;
+export interface ITestCasePluginManagerOptions extends ITestCasePluginOptions, IPluginManagerOptions {
+    logMgr?: LoggingPluginManager;
 }
 
 /**
@@ -22,58 +22,40 @@ export interface TestCasePluginManagerOptions extends IPluginManagerOptions {
  * }
  * ```
  */
-export class TestCasePluginManager extends AbstractPluginManager<ITestCasePlugin, TestCasePluginManagerOptions> {
-    private _logger: Logger;
+export class TestCasePluginManager extends AbstractPluginManager<AbstractTestCasePlugin, ITestCasePluginOptions> {
+    private _logMgr: LoggingPluginManager;
 
-    constructor(options?: TestCasePluginManagerOptions) {
-        super(options);
-        this._logger = options?.logger || new Logger({name: 'TestCasePluginManager', pluginNames: []});
+    constructor(options?: ITestCasePluginManagerOptions) {
+        super(nameof(TestCasePluginManager).toLowerCase(), options);
+        this._logMgr = options?.logMgr || new LoggingPluginManager({name: nameof(TestCasePluginManager), pluginNames: []});
     }
 
     async getTestCase(testId: string): Promise<ITestCase> {
-        return await this.getPlugins()
-        .then(async (plugins) => {
-            for (var i=0; i<plugins.length; i++) {
-                let handler: ITestCasePlugin = plugins[i];
-                if (handler && await handler.isEnabled()) {
-                    return await handler.getTestCase(testId);
-                }
-            }
-            return null;
+        return await this.getFirstEnabledPlugin()
+        .then(async (plugin) => {
+            return await plugin?.getTestCase(testId) || null;
         }).catch(async (err) => {
-            await this._logger.warn(err);
+            await this._logMgr.warn(err);
             return null;
         });
     }
 
     async findTestCases(searchTerm: string): Promise<ITestCase[]> {
-        return await this.getPlugins()
-        .then(async (plugins) => {
-            for (var i=0; i<plugins.length; i++) {
-                let handler: ITestCasePlugin = plugins[i];
-                if (handler && await handler.isEnabled()) {
-                    return await handler.findTestCases(searchTerm);
-                }
-            }
-            return null;
+        return await this.getFirstEnabledPlugin()
+        .then(async (plugin) => {
+            return await plugin?.findTestCases(searchTerm) || [];
         }).catch(async (err) => {
-            await this._logger.warn(err);
+            await this._logMgr.warn(err);
             return null;
         })
     }
 
     async shouldRun(testId: string): Promise<ProcessingResult> {
-        return await this.getPlugins()
-        .then(async (plugins) => {
-            for (var i=0; i<plugins.length; i++) {
-                let handler: ITestCasePlugin = plugins[i];
-                if (handler && await handler.isEnabled()) {
-                    return await handler.shouldRun(testId);
-                }
-            }
-            return {success: true, message: `no ITestCasePlugin in use so run all tests`};
+        return await this.getFirstEnabledPlugin()
+        .then(async (handler) => {
+            return await handler?.shouldRun(testId) || {success: true, message: `no ITestCasePlugin in use so run all tests`};
         }).catch(async (err) => {
-            await this._logger.warn(err);
+            await this._logMgr.warn(err);
             return {success: false, message: err};
         });
     }

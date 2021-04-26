@@ -1,14 +1,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { IPlugin } from './iplugin';
+import { AbstractPlugin } from './abstract-plugin';
 
 class Loader {
-    async load<T extends IPlugin>(pluginName: string, options?: any): Promise<T> {
+    async load<T extends AbstractPlugin<any>>(pluginName: string, options?: any): Promise<T> {
         let p: T = await this._validatePlugin<T>(pluginName, options);
         return p;
     }
 
-    private async _validatePlugin<T extends IPlugin>(pluginName: string, options?: any): Promise<T> {
+    private async _validatePlugin<T extends AbstractPlugin<any>>(pluginName: string, options?: any): Promise<T> {
         let plugin: T;
 
         try {

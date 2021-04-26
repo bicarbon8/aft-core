@@ -1,4 +1,4 @@
-import { DefectStatus, IDefect, ProcessingResult, Logger, TestWrapperOptions, TestWrapper, TestCasePluginManager, DefectPluginManager, rand } from "../../src";
+import { DefectStatus, IDefect, ProcessingResult, LoggingPluginManager, TestWrapperOptions, TestWrapper, TestCasePluginManager, DefectPluginManager, rand } from "../../src";
 
 let consoleLog = console.log;
 describe('TestWrapper', () => {
@@ -15,37 +15,37 @@ describe('TestWrapper', () => {
             expect: () => expect(true).toBeTruthy()
         });
         
-        expect(tw.logger).toBeDefined();
-        expect(await tw.logger.name()).toMatch(/^[0-9a-f]{8}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{12}$/i);
+        expect(tw.logMgr).toBeDefined();
+        expect(await tw.logMgr.name()).toMatch(/^[0-9a-f]{8}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{12}$/i);
     });
 
-    it('uses \'description\' as logger name if provided in options', async () => {
+    it('uses \'description\' as logMgr name if provided in options', async () => {
         let tw: TestWrapper = new TestWrapper({
             expect: () => expect(true).toBeTruthy(),
             description: 'true is always true', 
             testCases: ['C1234']
         });
         
-        expect(tw.logger).toBeDefined();
-        expect(await tw.logger.name()).toBe('true_is_always_true');
+        expect(tw.logMgr).toBeDefined();
+        expect(await tw.logMgr.name()).toBe('true_is_always_true');
     });
 
-    it('uses \'testCases\' as logger name if no description provided in options', async () => {
+    it('uses \'testCases\' as logMgr name if no description provided in options', async () => {
         let tw: TestWrapper = new TestWrapper({
             expect: () => expect(true).toBeTruthy(),
             testCases: ['C1234', 'C2345']
         });
         
-        expect(tw.logger).toBeDefined();
-        expect(await tw.logger.name()).toBe('C1234_C2345');
+        expect(tw.logMgr).toBeDefined();
+        expect(await tw.logMgr.name()).toBe('C1234_C2345');
     });
 
     it('can supply itself to the expectation function', async () => {
         let testWrapper: TestWrapper = new TestWrapper({
             expect: (tw) => {
-                tw.logger.step('expect true to not be falsy');
+                tw.logMgr.step('expect true to not be falsy');
                 expect(true).not.toBeFalsy();
-                tw.logger.step('profit!');
+                tw.logMgr.step('profit!');
                 return expect(false).not.toBeTruthy();
             }, 
             description: 'expect true is not false and false is not true'});
@@ -56,50 +56,50 @@ describe('TestWrapper', () => {
     });
 
     it('will log success result for passed in testIds on successful completion', async () => {
-        let logger: Logger = new Logger({pluginNames: []});
-        spyOn(logger, 'pass').and.callThrough();
+        let logMgr: LoggingPluginManager = new LoggingPluginManager({pluginNames: []});
+        spyOn(logMgr, 'pass').and.callThrough();
         let options: TestWrapperOptions = {
             expect: () => expect(false).toBeFalsy(),
             testCases: ['C1234', 'C2345'], 
-            logger: logger
+            logMgr: logMgr
         };
         let tw: TestWrapper = new TestWrapper(options);
         
         await tw.run();
         
-        expect(tw.logger.pass).toHaveBeenCalledTimes(2);
+        expect(tw.logMgr.pass).toHaveBeenCalledTimes(2);
     });
 
     it('will log failed result for passed in testIds on a failed completion', async () => {
-        let logger: Logger = new Logger({pluginNames: []});
-        spyOn(logger, 'fail').and.callThrough();
+        let logMgr: LoggingPluginManager = new LoggingPluginManager({pluginNames: []});
+        spyOn(logMgr, 'fail').and.callThrough();
         let options: TestWrapperOptions = {
             expect: () => false,
             testCases: ['C1234', 'C2345'], 
-            logger: logger
+            logMgr: logMgr
         };
         let tw: TestWrapper = new TestWrapper(options);
 
         await tw.run();
 
-        expect(tw.logger.fail).toHaveBeenCalledTimes(2);
+        expect(tw.logMgr.fail).toHaveBeenCalledTimes(2);
     });
 
     it('treats exceptions in the expectation as a failure', async () => {
-        let logger: Logger = new Logger({pluginNames: []});
-        spyOn(logger, 'fail').and.callThrough();
+        let logMgr: LoggingPluginManager = new LoggingPluginManager({pluginNames: []});
+        spyOn(logMgr, 'fail').and.callThrough();
         let options: TestWrapperOptions = {
             expect: () => {
                 throw 'mock failure exception';
             },
             testCases: ['C1234', 'C2345'],
-            logger: logger
+            logMgr: logMgr
         };
         let tw: TestWrapper = new TestWrapper(options);
 
         await tw.run();
 
-        expect(tw.logger.fail).toHaveBeenCalledTimes(2);
+        expect(tw.logMgr.fail).toHaveBeenCalledTimes(2);
     });
 
     it('will skip execution if all tests should not be run', async () => {

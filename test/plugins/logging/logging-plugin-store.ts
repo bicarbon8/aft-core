@@ -1,4 +1,4 @@
-import { LoggingLevel } from "../../../src/logging/logging-level";
+import { LoggingLevel } from "../../../src/plugins/logging/logging-level";
 import { ITestResult } from "../../../src/test-cases/itest-result";
 import { LogMessage } from "./log-message";
 

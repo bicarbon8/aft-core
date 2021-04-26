@@ -1,15 +1,16 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { Logger } from '../logging/logger';
-import { LoggingLevel } from '../logging/logging-level';
+import { LoggingPluginManager } from '../plugins/logging/logging-plugin-manager';
+import { LoggingLevel } from '../plugins/logging/logging-level';
 import { ProcessingResult } from '../helpers/processing-result';
+import { nameof } from 'ts-simple-nameof';
 
-class ConfigLoader {
+class AftConfigManager {
     private _aftConfig: object;
-    private _logger: Logger;
+    private _logMgr: LoggingPluginManager;
 
     constructor() {
-        this._logger = new Logger({name: 'ConfigLoader', pluginNames: []});
+        this._logMgr = new LoggingPluginManager({name: nameof(AftConfigManager), pluginNames: []});
     }
 
     /**
@@ -25,7 +26,7 @@ class ConfigLoader {
                     }
                     if (data) {
                         let fileContents: string = data.toString('utf8');
-                        let jsonRes: ProcessingResult = ConfigLoader.isJsonString(fileContents);
+                        let jsonRes: ProcessingResult = AftConfigManager.isJsonString(fileContents);
                         if (jsonRes.success) {
                             resolve(jsonRes.obj as T);
                         } else {
@@ -52,7 +53,7 @@ class ConfigLoader {
             }
             this._aftConfig = await this.loadJsonFile<object>(currentDir + 'aftconfig.json')
                 .catch(async (err) => {
-                    await this._logger.warn(err);
+                    await this._logMgr.warn(err);
                     return {}; // empty config
                 });
         }
@@ -70,9 +71,9 @@ class ConfigLoader {
      */
     async get<T>(keys: string, defaultVal?: T): Promise<T> {
         let conf: object = await this.aftConfig();
-        let val: any = await this.getFrom(conf, keys)
+        let val: T = await this.getFrom<T>(conf, keys)
         
-        return val || defaultVal as T;
+        return (val === undefined || val === null) ? defaultVal : val;
     }
 
     /**
@@ -84,8 +85,8 @@ class ConfigLoader {
      * @param obj the object to search for values within
      * @param keys the keys to be used in looking up values separated by the . character
      */
-    async getFrom(obj: any, keys: string): Promise<any> {
-        let result: any = null;
+    async getFrom<T>(obj: any, keys: string): Promise<T> {
+        let result: T;
         let keysArray: string[] = keys.split('.');
         let currentKey: string = keysArray.shift();
 
@@ -95,9 +96,9 @@ class ConfigLoader {
                     result = await this.getFrom(obj[currentKey], keysArray.join('.'));
                     break;
                 case "string":
-                    let envRes: ProcessingResult = ConfigLoader.isEnvVar(obj);
+                    let envRes: ProcessingResult = AftConfigManager.isEnvVar(obj);
                     if (envRes.success) {
-                        let jsonRes: ProcessingResult = ConfigLoader.isJsonString(envRes.obj);
+                        let jsonRes: ProcessingResult = AftConfigManager.isJsonString(envRes.obj);
                         if (jsonRes.success) {
                             result = await this.getFrom(jsonRes.obj, keys);
                             break;
@@ -105,22 +106,22 @@ class ConfigLoader {
                     }
                 default:
                     result = null;
-                    await this._logger.log(LoggingLevel.trace, `invalid Argument: ${obj}, Type: ${typeof obj} passed to getFrom}`);
+                    await this._logMgr.log(LoggingLevel.trace, `invalid Argument: ${obj}, Type: ${typeof obj} passed to getFrom}`);
                     break;
             }
         } else {
             switch(typeof obj) {
                 case "string":
-                    let envRes: ProcessingResult = ConfigLoader.isEnvVar(obj);
+                    let envRes: ProcessingResult = AftConfigManager.isEnvVar(obj);
                     if (envRes.success) {
-                        let jsonRes: ProcessingResult = ConfigLoader.isJsonString(envRes.obj);
+                        let jsonRes: ProcessingResult = AftConfigManager.isJsonString(envRes.obj);
                         if (jsonRes.success) {
                             result = jsonRes.obj;
                         } else {
                             result = envRes.obj;
                         }
                     } else {
-                        result = obj;
+                        result = obj as unknown as T;
                     }
                     break;
                 default:
@@ -132,7 +133,7 @@ class ConfigLoader {
     }
 }
 
-module ConfigLoader {
+module AftConfigManager {
     /**
      * will check if the passed in 'str' string is a 
      * reference to an environment variable key and if so will
@@ -173,4 +174,4 @@ module ConfigLoader {
     }
 }
 
-export const config = new ConfigLoader();
+export const aftconfigMgr = new AftConfigManager();

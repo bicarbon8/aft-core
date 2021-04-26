@@ -1,12 +1,12 @@
-import { ProcessingResult, rand, TestStatus, ITestCase, ITestCasePlugin } from "../../../src";
+import { nameof } from "ts-simple-nameof";
+import { ProcessingResult, rand, TestStatus, ITestCase, AbstractTestCasePlugin, ITestCasePluginOptions } from "../../../src";
 
-export class MockTestCasePlugin implements ITestCasePlugin {
-    name: string = 'mock-test-case-plugin';
-    async isEnabled(): Promise<boolean> {
-        return true;
+export class MockTestCasePlugin extends AbstractTestCasePlugin {
+    constructor(options?: ITestCasePluginOptions) {
+        super(nameof(MockTestCasePlugin).toLowerCase(), options);
     }
     async onLoad(): Promise<void> {
-        
+        /* do nothing */
     }
     async getTestCase(testId: string): Promise<ITestCase> {
         return {

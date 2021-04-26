@@ -1,17 +1,17 @@
-import { config } from "../../src/configuration/config-loader";
+import { aftconfigMgr } from "../../src/configuration/aftconfig-manager";
 import { rand } from "../../src/helpers/random-generator";
-import { LoggingLevel } from "../../src/logging/logging-level";
+import { LoggingLevel } from "../../src/plugins/logging/logging-level";
 
-describe('TestConfig', () => {
+describe('AftConfigManager', () => {
     describe('loadJsonFile', () => {
         it('can parse a json file', async () => {
-            let packageJson: PackageJson = await config.loadJsonFile<PackageJson>('package.json');
+            let packageJson: PackageJson = await aftconfigMgr.loadJsonFile<PackageJson>('package.json');
     
             expect(packageJson.name).toMatch(/(aft-)[a-z\-]+/);
         });
 
         it('returns a meaningful error if file is not found', async () => {
-            await config.loadJsonFile<object>('doesnotexist.json')
+            await aftconfigMgr.loadJsonFile<object>('doesnotexist.json')
             .catch((reason: string) => {
                 expect(reason).not.toBeNull();
                 expect(reason).toContain('no such file');
@@ -19,7 +19,7 @@ describe('TestConfig', () => {
         });
 
         it('returns a meaningful error if file is not valid JSON', async () => {
-            await config.loadJsonFile<object>('LICENSE')
+            await aftconfigMgr.loadJsonFile<object>('LICENSE')
             .catch((reason: string) => {
                 expect(reason).not.toBeNull();
                 expect(reason).toContain('Unexpected token');
@@ -29,8 +29,8 @@ describe('TestConfig', () => {
 
     describe('aftConfig', () => {
         it('can read from aftconfig.json config file', async () => {
-            let conf: object = await config.aftConfig();
-            let level: string = conf['logging'].level;
+            let conf: object = await aftconfigMgr.aftConfig();
+            let level: string = conf['loggingpluginmanager'].level;
     
             expect(level).not.toBeNull();
             expect(level).not.toBeUndefined();
@@ -38,13 +38,13 @@ describe('TestConfig', () => {
         });
 
         it('can modify loaded aftconfig.json object', async () => {
-            let conf: object = await config.aftConfig();
+            let conf: object = await aftconfigMgr.aftConfig();
     
             let key: string = rand.getString(10);
             let val: string = rand.getString(11);
             conf[key] = val;
     
-            let conf2: object = await config.aftConfig();
+            let conf2: object = await aftconfigMgr.aftConfig();
     
             expect(conf2[key]).toBe(val);
             delete(conf[key]);
@@ -60,12 +60,12 @@ describe('TestConfig', () => {
                 bar: rand.getInt(999, 9999)
             };
             process.env[envKey] = JSON.stringify(expected);
-            await config.aftConfig()
+            await aftconfigMgr.aftConfig()
             .then((conf) => {
                 conf[key] = `%${envKey}%`;
             });
     
-            let actual: FooBar = await config.get<FooBar>(key, null);
+            let actual: FooBar = await aftconfigMgr.get<FooBar>(key, null);
             expect(actual).not.toBeNull();
             expect(actual.foo).toBe(expected.foo);
             expect(actual.bar).toBe(expected.bar);
@@ -80,12 +80,12 @@ describe('TestConfig', () => {
                 foo: rand.getString(10),
                 bar: rand.getInt(99, 999)
             };
-            await config.aftConfig()
+            await aftconfigMgr.aftConfig()
             .then((conf) => {
                 conf[key] = `%${envKey}%`;
             });
     
-            let actual: FooBar = await config.get<FooBar>(key, expected);
+            let actual: FooBar = await aftconfigMgr.get<FooBar>(key, expected);
             expect(actual).not.toBeNull();
             expect(actual.foo).toBe(expected.foo);
             expect(actual.bar).toBe(expected.bar);
@@ -104,9 +104,9 @@ describe('TestConfig', () => {
                 }
             };
     
-            expect(await config.getFrom(actual, "bar.asd.jkl")).toBe(actual['bar']['asd']['jkl']);
-            expect(await config.getFrom(actual, "foo")).toBe(actual['foo']);
-            expect(await config.getFrom(actual, "bar.baz")).toBe(actual['bar']['baz']);
+            expect(await aftconfigMgr.getFrom(actual, "bar.asd.jkl")).toBe(actual['bar']['asd']['jkl']);
+            expect(await aftconfigMgr.getFrom(actual, "foo")).toBe(actual['foo']);
+            expect(await aftconfigMgr.getFrom(actual, "bar.baz")).toBe(actual['bar']['baz']);
         });
     
         it('will return null if passed in key does not exist', async () => {
@@ -120,7 +120,7 @@ describe('TestConfig', () => {
                 }
             };
 
-            expect(await config.getFrom(actual, "foo.bar")).toBeNull();
+            expect(await aftconfigMgr.getFrom(actual, "foo.bar")).toBeNull();
         });
     });
 });

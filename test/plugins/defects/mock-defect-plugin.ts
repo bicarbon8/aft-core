@@ -1,12 +1,12 @@
-import { DefectStatus, IDefect, IDefectPlugin, rand } from "../../../src";
+import { nameof } from "ts-simple-nameof";
+import { DefectStatus, IDefect, AbstractDefectPlugin, rand, IDefectPluginOptions } from "../../../src";
 
-export class MockDefectPlugin implements IDefectPlugin {
-    name: string = 'mock-defect-plugin';
-    async isEnabled(): Promise<boolean> {
-        return true;
+export class MockDefectPlugin extends AbstractDefectPlugin {
+    constructor(options?: IDefectPluginOptions) {
+        super(nameof(MockDefectPlugin), options);
     }
     async onLoad(): Promise<void> {
-        
+        /* do nothing */
     }
     async getDefect(defectId: string): Promise<IDefect> {
         return {

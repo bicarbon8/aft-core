@@ -1,10 +1,10 @@
-import { AbstractPluginManager } from "../abstract-plugin-manager";
-import { Logger } from "../../logging/logger";
-import { IBuildInfoPlugin } from "./ibuild-info-plugin";
-import { IPluginManagerOptions } from "../iplugin-manager-options";
+import { AbstractPluginManager, IPluginManagerOptions } from "../abstract-plugin-manager";
+import { LoggingPluginManager } from "../logging/logging-plugin-manager";
+import { AbstractBuildInfoPlugin, IBuildInfoPluginOptions } from "./ibuild-info-plugin";
+import { nameof } from "ts-simple-nameof";
 
-export interface BuildInfoPluginManagerOptions extends IPluginManagerOptions {
-    logger?: Logger;
+export interface IBuildInfoPluginManagerOptions extends IBuildInfoPluginOptions, IPluginManagerOptions {
+    logMgr?: LoggingPluginManager;
 }
 
 /**
@@ -20,42 +20,30 @@ export interface BuildInfoPluginManagerOptions extends IPluginManagerOptions {
  * }
  * ```
  */
-export class BuildInfoPluginManager extends AbstractPluginManager<IBuildInfoPlugin, BuildInfoPluginManagerOptions> {
-    private _logger: Logger;
+export class BuildInfoPluginManager extends AbstractPluginManager<AbstractBuildInfoPlugin, IBuildInfoPluginOptions> {
+    private _logMgr: LoggingPluginManager;
 
-    constructor(options?: BuildInfoPluginManagerOptions) {
-        super(options);
-        this._logger = options?.logger || new Logger({name: 'BuildInfoPluginManager', pluginNames: []});
+    constructor(options?: IBuildInfoPluginManagerOptions) {
+        super(nameof(BuildInfoPluginManager).toLowerCase(), options);
+        this._logMgr = options?.logMgr || new LoggingPluginManager({name: nameof(BuildInfoPluginManager), pluginNames: []});
     }
 
     async getBuildName(): Promise<string> {
-        return await this.getPlugins()
-        .then(async (plugins) => {
-            for (var i=0; i<plugins.length; i++) {
-                let p: IBuildInfoPlugin = plugins[i];
-                if (p && await p.isEnabled()) {
-                    return await p.getBuildName();
-                }
-            }
-            return null;
+        return await this.getFirstEnabledPlugin()
+        .then(async (plugin) => {
+            return await plugin?.getBuildName();
         }).catch(async (err) => {
-            await this._logger.warn(err);
+            await this._logMgr.warn(err);
             return null;
         });
     }
 
     async getBuildNumber(): Promise<string> {
-        return await this.getPlugins()
-        .then(async (plugins) => {
-            for (var i=0; i<plugins.length; i++) {
-                let p: IBuildInfoPlugin = plugins[i];
-                if (p && await p.isEnabled()) {
-                    return await p.getBuildNumber();
-                }
-            }
-            return null;
+        return await this.getFirstEnabledPlugin()
+        .then(async (plugin) => {
+            return await plugin?.getBuildNumber();
         }).catch(async (err) => {
-            await this._logger.warn(err);
+            await this._logMgr.warn(err);
             return null;
         });
     }

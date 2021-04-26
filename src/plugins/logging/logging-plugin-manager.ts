@@ -1,17 +1,15 @@
 import { cloneDeep } from "lodash";
-import { ITestResult } from "../test-cases/itest-result";
-import { ILoggingPlugin } from "../plugins/logging/ilogging-plugin";
+import { ITestResult } from "../../test-cases/itest-result";
+import { AbstractLoggingPlugin, ILoggingPluginOptions } from "./abstract-logging-plugin";
 import { LoggingLevel } from "./logging-level";
 import { FormatOptions } from "./format-options";
-import { AbstractPluginManager } from "../plugins/abstract-plugin-manager";
-import { rand } from "../helpers/random-generator";
-import { convert } from "../helpers/converter";
+import { AbstractPluginManager, IPluginManagerOptions } from "../abstract-plugin-manager";
+import { rand } from "../../helpers/random-generator";
+import { convert } from "../../helpers/converter";
+import { nameof } from "ts-simple-nameof";
 
-export interface LoggerOptions {
-    name?: string;
-    level?: string;
-    message?: string;
-    pluginNames?: string[];
+export interface logMgrOptions extends IPluginManagerOptions, ILoggingPluginOptions {
+
 }
 
 /**
@@ -25,7 +23,7 @@ export interface LoggerOptions {
  * ```
  * {
  *   ...
- *   "logger": {
+ *   "logMgr": {
  *     "level": "info",
  *     "pluginNames": [
  *       "logging-plugin1",
@@ -36,19 +34,19 @@ export interface LoggerOptions {
  * }
  * ```
  */
-export class Logger extends AbstractPluginManager<ILoggingPlugin, LoggerOptions> {
+export class LoggingPluginManager extends AbstractPluginManager<AbstractLoggingPlugin, ILoggingPluginOptions> {
     private _name: string;
     private _stepCount: number = 0;
 
-    async name(): Promise<string> {
-        if (!this._name) {
-            this._name = convert.toSafeString(await this.getOption('name', rand.guid));
-        }
-        return this._name;
+    constructor(options?: logMgrOptions) {
+        super(nameof(LoggingPluginManager).toLowerCase(), options);
     }
 
-    stepCount(): number {
-        return this._stepCount;
+    async name(): Promise<string> {
+        if (!this._name) {
+            this._name = convert.toSafeString(await this.optionsMgr.getOption(nameof<logMgrOptions>(o => o.name), rand.guid));
+        }
+        return this._name;
     }
 
     /**
@@ -123,20 +121,19 @@ export class Logger extends AbstractPluginManager<ILoggingPlugin, LoggerOptions>
      * @param message the string to be logged
      */
     async log(level: LoggingLevel, message: string): Promise<void> {
-        let plugins: ILoggingPlugin[] = await this.getPlugins();
+        let plugins: AbstractLoggingPlugin[] = await this.getPlugins();
         for (var i=0; i<plugins.length; i++) {
-            let p: ILoggingPlugin = plugins[i];
+            let p: AbstractLoggingPlugin = plugins[i];
             if (p) {
                 try {
-                    let enabled: boolean = await p.isEnabled();
-                    if (enabled) {
+                    if (await p.enabled()) {
                         await p.log(level, message);
                     }
                 } catch (e) {
-                    console.warn(Logger.format({
+                    console.warn(LoggingPluginManager.format({
                         name: await this.name(), 
                         level: LoggingLevel.warn, 
-                        message: `unable to send log message to '${p.name || 'unknown'}' plugin due to: ${e}`
+                        message: `unable to send log message to '${p.constructor.name || 'unknown'}' plugin due to: ${e}`
                     }));
                 }
             }
@@ -149,21 +146,20 @@ export class Logger extends AbstractPluginManager<ILoggingPlugin, LoggerOptions>
      * @param result a `TestResult` object to be sent
      */
     async logResult(result: ITestResult): Promise<void> {
-        let plugins: ILoggingPlugin[] = await this.getPlugins();
+        let plugins: AbstractLoggingPlugin[] = await this.getPlugins();
         for (var i=0; i<plugins.length; i++) {
-            let p: ILoggingPlugin = plugins[i];
+            let p: AbstractLoggingPlugin = plugins[i];
             if (p) {
                 try {
-                    let enabled: boolean = await p.isEnabled();
-                    if (enabled) {
+                    if (await p.enabled()) {
                         let r: ITestResult = cloneDeep(result);
                         await p.logResult(r);
                     }
                 } catch (e) {
-                    console.warn(Logger.format({
+                    console.warn(LoggingPluginManager.format({
                         name: await this.name(),
                         level: LoggingLevel.warn, 
-                        message: `unable to send result to Logging Plugin: '${p.name || 'unknown'}' due to: ${e}`
+                        message: `unable to send result to Logging Plugin: '${p.constructor.name || 'unknown'}' due to: ${e}`
                     }));
                 }
             }
@@ -176,26 +172,25 @@ export class Logger extends AbstractPluginManager<ILoggingPlugin, LoggerOptions>
      * of any logging actions before destroying the `TestLog` instance
      */
     async finalise(): Promise<void> {
-        let plugins: ILoggingPlugin[] = await this.getPlugins();
+        let plugins: AbstractLoggingPlugin[] = await this.getPlugins();
         for (var i=0; i<plugins.length; i++) {
-            let p: ILoggingPlugin = plugins[i];
+            let p: AbstractLoggingPlugin = plugins[i];
             try {
-                let enabled: boolean = await p.isEnabled();
-                if (enabled) {
+                if (await p.enabled()) {
                     await plugins[i].finalise();
                 }
             } catch (e) {
-                console.warn(Logger.format({
+                console.warn(LoggingPluginManager.format({
                     name: await this.name(), 
                     level: LoggingLevel.warn, 
-                    message: `unable to call finalise on Logging Plugin: ${p.name || 'unknown'} due to: ${e}`
+                    message: `unable to call finalise on Logging Plugin: ${p.constructor.name || 'unknown'} due to: ${e}`
                 }));
             }
         }
     }
 }
 
-export module Logger {
+export module LoggingPluginManager {
     export function format(options: FormatOptions) {
         if (!options.name) { options.name = 'unknown_name'; }
         if (!options.message) { options.message = ''; }

@@ -1,20 +1,34 @@
-import { config } from "./config-loader";
+import { aftconfigMgr } from "./aftconfig-manager";
 
 /**
- * base class to use for any classes that allow configuration
- * options to be passed in to the constructor or specified in
- * the `aftconfig.json`. provides a helpful `getOption` function
- * that will first look for the specified option in the passed
- * in options and if not found there will then check in the
- * `aftconfig.json` section specified by the Class name (all lowercase)
+ * manages the retrieval of options based on either a passed
+ * in set of options or by looking in the `aftconfig.json` section
+ * specified by the {key} passed to the constructor followed by any
+ * specified {keys} passed to the {getOption} function. For example
+ * in the following `aftconfig.json` snippet:
+ * ```json
+ * {
+ *   ...
+ *   "key": {
+ *     "foo": "this is 'key.foo'",
+ *     "bar": true,
+ *     "baz": {
+ *       "foo": "this is 'key.baz.foo'"
+ *     }
+ *   }
+ *   ...
+ * }
+ * ```
  */
-export abstract class OptionsManager<T> {
-    protected _options: T;
+export class OptionsManager {
     readonly key: string;
 
-    constructor(options?: T) {
-        this._options = options || {} as T;
-        this.key = this.constructor.name.toLowerCase();
+    private _options: {};
+
+    constructor(key: string, options?: {}) {
+        this.key = key;
+        // ensure this is purely a plain object with no functions
+        this._options = JSON.parse(JSON.stringify(options || {}));
     }
 
     /**
@@ -25,10 +39,10 @@ export abstract class OptionsManager<T> {
      * @param keys the lookup keys to be used to retrieve a value
      * @param defaultVal a default value to return in the case that no value is found
      */
-    protected async getOption<Tval>(keys: string, defaultVal?: Tval): Promise<Tval> {
-        let val: Tval = await config.getFrom(this._options, keys);
-        if (!val) {
-            val = await config.get<Tval>(`${this.key}.${keys}`, defaultVal);
+    async getOption<Tval>(keys: string, defaultVal?: Tval): Promise<Tval> {
+        let val: Tval = await aftconfigMgr.getFrom<Tval>(this._options, keys);
+        if (val === undefined) {
+            val = await aftconfigMgr.get<Tval>(`${this.key}.${keys}`, defaultVal);
         }
         return val;
     }

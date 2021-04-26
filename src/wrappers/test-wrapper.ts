@@ -1,5 +1,5 @@
 import { cloneDeep } from "lodash";
-import { Logger } from "../logging/logger";
+import { LoggingPluginManager } from "../plugins/logging/logging-plugin-manager";
 import { TestStatus } from "../test-cases/test-status";
 import { ITestResult } from "../test-cases/itest-result";
 import { convert } from "../helpers/converter";
@@ -18,7 +18,7 @@ export interface TestWrapperOptions {
     buildInfoManager?: BuildInfoPluginManager;
     defects?: string[];
     defectManager?: DefectPluginManager;
-    logger?: Logger;
+    logMgr?: LoggingPluginManager;
     testCases?: string[];
     testCaseManager?: TestCasePluginManager;
     description?: string;
@@ -36,7 +36,7 @@ export interface TestWrapperOptions {
 export class TestWrapper {
     private _expectation: Func<TestWrapper, any>;
     private _description: string;
-    private _logger: Logger;
+    private _logMgr: LoggingPluginManager;
     private _testCases: string[] = [];
     private _defects: string[] = [];
     private _errors: string[] = [];
@@ -53,7 +53,7 @@ export class TestWrapper {
      * ex:
      * ```
      * let tw: TestWrapper = new TestWrapper(async (t) => {
-     *     await t.logger().info("using the TestWrapper's logger");
+     *     await t.logMgr().info("using the TestWrapper's logMgr");
      *     let foo = 'foo';
      *     expect(foo).toEqual('foo');
      * });
@@ -65,7 +65,7 @@ export class TestWrapper {
         this._expectation = options.expect;
         
         this._initialiseDescription(options);
-        this._initialiseLogger(options);
+        this._initialiselogMgr(options);
         this._initialiseTestCases(options);
         this._initialiseDefects(options);
         this._initialiseBuildInfo(options);
@@ -79,8 +79,8 @@ export class TestWrapper {
         return this._description;
     }
 
-    get logger(): Logger {
-        return this._logger;
+    get logMgr(): LoggingPluginManager {
+        return this._logMgr;
     }
 
     get testCases(): string[] {
@@ -124,8 +124,8 @@ export class TestWrapper {
         }
     }
 
-    private _initialiseLogger(options: TestWrapperOptions): void {
-        this._logger = options.logger || new Logger({name: this.description});
+    private _initialiselogMgr(options: TestWrapperOptions): void {
+        this._logMgr = options.logMgr || new LoggingPluginManager({name: this.description});
     }
 
     private _initialiseTestCases(options: TestWrapperOptions): void {
@@ -172,13 +172,13 @@ export class TestWrapper {
         for (var i=0; i<results.length; i++) {
             let result: ITestResult = results[i];
             try {
-                await this._logger.logResult(result);
+                await this._logMgr.logResult(result);
             } catch (e) {
-                await this._logger.warn(`unable to log test result for test '${result.testId || result.resultId}' due to: ${e}`);
+                await this._logMgr.warn(`unable to log test result for test '${result.testId || result.resultId}' due to: ${e}`);
             }
         }
 
-        this.logger.finalise();
+        this.logMgr.finalise();
     }
 
     private async _logMessage(status: TestStatus, message: string): Promise<void> {
@@ -187,14 +187,14 @@ export class TestWrapper {
             case TestStatus.Retest:
             case TestStatus.Skipped:
             case TestStatus.Untested:
-                await this.logger.warn(message);
+                await this.logMgr.warn(message);
                 break;
             case TestStatus.Failed:
-                await this.logger.fail(message);
+                await this.logMgr.fail(message);
                 break;
             case TestStatus.Passed:
             default:
-                await this.logger.pass(message);
+                await this.logMgr.pass(message);
                 break;
         }
     }
