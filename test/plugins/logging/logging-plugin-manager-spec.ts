@@ -1,8 +1,5 @@
-import { LoggingPluginManager, logMgrOptions } from "../../../src/plugins/logging/logging-plugin-manager";
-import { rand } from "../../../src/helpers/random-generator";
-import { ITestResult } from "../../../src/test-cases/itest-result";
 import { LPS } from "./logging-plugin-store";
-import { TestStatus, wait } from "../../../src";
+import { ITestResult, LoggingPluginManager, LoggingPluginManagerOptions, rand, TestStatus, wait } from "../../../src";
 
 let consoleLog = console.log;
 describe('LoggingPluginManager', () => {
@@ -19,8 +16,8 @@ describe('LoggingPluginManager', () => {
     });
 
     it('will send logs to any registered AbstractLoggingPlugin implementations', async () => {
-        let opts: logMgrOptions = {
-            name: 'will send logs to any registered AbstractLoggingPlugin implementations',
+        let opts: LoggingPluginManagerOptions = {
+            logName: 'will send logs to any registered AbstractLoggingPlugin implementations',
             pluginNames: ['fake-logging-plugin']
         };
         let logMgr: LoggingPluginManager = new LoggingPluginManager(opts);
@@ -46,8 +43,8 @@ describe('LoggingPluginManager', () => {
     });
 
     it('will send cloned TestResult to any registered AbstractLoggingPlugin implementations', async () => {
-        let opts: logMgrOptions = {
-            name: 'will send cloned TestResult to any registered AbstractLoggingPlugin implementations',
+        let opts: LoggingPluginManagerOptions = {
+            logName: 'will send cloned TestResult to any registered AbstractLoggingPlugin implementations',
             pluginNames: ['fake-logging-plugin']
         };
         let logMgr: LoggingPluginManager = new LoggingPluginManager(opts);
@@ -73,18 +70,18 @@ describe('LoggingPluginManager', () => {
     });
 
     it('calls AbstractLoggingPlugin.finalise on TestLog.finalise', async () => {
-        let opts: logMgrOptions = {
-            name: 'calls AbstractLoggingPlugin.finalise on TestLog.finalise',
+        let opts: LoggingPluginManagerOptions = {
+            logName: 'calls AbstractLoggingPlugin.finalise on TestLog.finalise',
             pluginNames: ['fake-logging-plugin']
         };
         let logMgr: LoggingPluginManager = new LoggingPluginManager(opts);
 
         await logMgr.info(rand.getString(18));
 
-        expect(LPS.finalised).toEqual(false);
+        expect(LPS.disposed).toEqual(false);
 
-        await logMgr.finalise();
+        await logMgr.dispose();
 
-        expect(LPS.finalised).toEqual(true);
+        expect(LPS.disposed).toEqual(true);
     });
 });

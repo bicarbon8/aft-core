@@ -59,44 +59,63 @@ which would output the following logs:
 5:29:56 PM - more_complex_expectation_actions - PASS  - C3344
 ```
 ## Benefits of AFT
-the AFT-Core package on it's own contains some helpers for testing, but the actual benefit comes from the plugins. Because the above logging will also send to any registered logging plugins, it becomes easy to create logMgrs that send to any external system such as TestRail or to log results to Elasticsearch. Additionally, before running any _expectation_ passed to a `should(options)` function, AFT will confirm if the expectation should actually be run based on the results of a query to any supplied `ITestCasePlugin` implementations and a subsequent query to any supplied `IDefectPlugin` implementations. 
+the AFT-Core package on it's own contains some helpers for testing, but the actual benefit comes from the plugins. Because the above logging will also send to any registered logging plugins, it becomes easy to create logging plugins that send to any external system such as TestRail or to log results to Elasticsearch. Additionally, before running any _expectation_ passed to a `should(options)` function, AFT will confirm if the expectation should actually be run based on the results of a query to any supplied `AbstractTestCasePlugin` implementations and a subsequent query to any supplied `AbstractDefectPlugin` implementations. 
 ### Logging Plugins
-to create a logging plugin you simply need to extend from the `AbstractLoggingPlugin` class in a class with a constructor accepting a simple object and from the constructor, call `super(key, options)` where the `key` is the name of the section in your `aftconfig.json` where configuration can be specified for your plugin. Then, in your `aftconfig.json` add the following (where plugins `logging-plugin1.js` and `logging-plugin2.js` are contained within the test execution directory or a subdirectory of it and `loggingpluginmanager` is the logging plugin manager):
+to create a logging plugin you simply need to extend from the `AbstractLoggingPlugin` class in a class with a constructor accepting a simple object and from the constructor, call `super(key, options)` where the `key` is the name of the section in your `aftconfig.json` where configuration can be specified for your plugin. Then, in your `aftconfig.json` add the following (where plugins `console-logging-plugin.js` is bundled with `aft-core` and `logging-plugin2.js` is some bespoke plugin that is contained within the test execution directory or a subdirectory of it and `loggingpluginmanager` is the logging plugin manager):
 ```json
 {
     "loggingpluginmanager": {
         "pluginNames": [
-            "logging-plugin1",
+            "console-logging-plugin",
             "logging-plugin2"
         ],
         "level": "info"
     }
 }
 ```
-> NOTE: it is also possible to specify a full path to the plugin like: '/full/path/to/logging-plugin1' leaving off the suffix
+> NOTE: it is also possible to specify a full path to the plugin like: '/full/path/to/logging-plugin2' leaving off the suffix (useful for plugins not contained in a directory or subdirectory of the test execution directory)
+
+> NOTE: setting the `level` in the `loggingpluginmanager` will override any settings in the plugins own configuration setting (this can be useful to disable all logging by setting it to a value of `none`)
 
 #### Example Logging Plugin
-to create your own simple console logging plugin you would implement the code below.
+to create your own simple logging plugin that stores all logs until the `dispose` function is called you would implement the code below.
 
-> NOTE: configuration for the below can be added in a object in the `aftconfig.json` named `simpleconsolelogMgr` based on the `key` passed to the `AbstractLoggingPlugin` constructor
+> NOTE: configuration for the below can be added in a object in the `aftconfig.json` named `ondisposeconsolelogger` based on the `key` passed to the `AbstractLoggingPlugin` constructor
 ```typescript
-export class SimpleConsolelogMgr extends AbstractLoggingPlugin {
+export class OnDisposeConsoleLogger extends AbstractLoggingPlugin {
+    private _logs: string[];
     constructor(options?: ILoggingPluginOptions) {
-        super('simpleconsolelogMgr', options);
+        super('ondisposeconsolelogger', options);
+        this._logs = [];
     }
     async onLoad(): Promise<void> {
-        /* called immediately after Plugin is instantiated */
+        /* do nothing */
     }
     async log(level: LoggingLevel, message: string): Promise<void> {
         if (await this.enabled()) {
             let l: LoggingLevel = await this.level();
             if (level.value >= l.value && level != LoggingLevel.none) {
-                console.log(message);
+                this._logs.push(`${level.logString} - ${message}`);
             }
         }
     }
-    async logResult(result: ITestResult): Promise<void> { /* do nothing */ }
-    async finalise(): Promise<void> { /* do nothing */ }
+    async logResult(result: ITestResult): Promise<void> { 
+        if (result.status.Passed) {
+            this.log(LoggingLevel.pass, JSON.stringify(result));
+        } else {
+            this.log(LogginLevel.fail, JSON.stringify(result));
+        }
+    }
+    async dispose(error?: Error): Promise<void> { 
+        console.log(`[${await this.name()}]`);
+        this._logs.forEach((message) => {
+            console.log(message);
+        });
+        if (error) {
+            console.error(`ERROR: ${error.message}`);
+        }
+        console.log('OnDisposeConsoleLogger is now disposed!');
+    }
 }
 ```
 ### Test Case Plugin

@@ -10,7 +10,7 @@ class AftConfigManager {
     private _logMgr: LoggingPluginManager;
 
     constructor() {
-        this._logMgr = new LoggingPluginManager({name: nameof(AftConfigManager), pluginNames: []});
+        this._logMgr = new LoggingPluginManager({logName: nameof(AftConfigManager), pluginNames: []});
     }
 
     /**

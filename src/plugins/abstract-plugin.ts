@@ -1,11 +1,35 @@
 import { nameof } from "ts-simple-nameof";
 import { OptionsManager } from "../configuration/options-manager";
+import { IDisposable } from "../helpers/idisposable";
 
+/**
+ * a base options object that must be implemented by any
+ * Plugin implementation's constructor options
+ */
 export interface IPluginOptions {
+    /**
+     * [OPTIONAL] if not provided, will default to value in `aftconfig.json` or `true`
+     */
     enabled?: boolean;
+    /**
+     * [OPTIONAL] if not provided a new {OptionsManager} will be created
+     */
+    _optMgr?: OptionsManager;
 }
 
-export abstract class AbstractPlugin<T extends IPluginOptions> {
+/**
+ * base class to be extended by any Plugin implementation.
+ * 
+ * NOTE:
+ * * the `onLoad` function is called automatically after the plugin instance is created
+ * * the `dispose` function is only called if the plugin is used within a {using} call
+ * ```
+ * await using(pluginInstance, (plugin) => {
+ *     plugin.doStuff();
+ * }); // `plugin.dispose` is called here
+ * ```
+ */
+export abstract class AbstractPlugin<T extends IPluginOptions> implements IDisposable {
     private _enabled: boolean;
     readonly optionsMgr: OptionsManager;
     constructor(key: string, options?: T) {
@@ -17,5 +41,6 @@ export abstract class AbstractPlugin<T extends IPluginOptions> {
         }
         return this._enabled;
     }
-    abstract onLoad(): Promise<void>
+    abstract onLoad(): Promise<void>;
+    abstract dispose(error?: Error): Promise<void>;
 }

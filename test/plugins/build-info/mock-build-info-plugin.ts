@@ -14,4 +14,7 @@ export class MockBuildInfoPlugin extends AbstractBuildInfoPlugin {
     async getBuildNumber(): Promise<string> {
         return `MockBuildNumber-${rand.getInt(100, 999)}`;
     }
+    async dispose(error?: Error): Promise<void> {
+        /* do nothing */
+    }
 }

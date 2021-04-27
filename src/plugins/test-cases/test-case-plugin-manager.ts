@@ -1,12 +1,12 @@
 import { AbstractPluginManager, IPluginManagerOptions } from "../abstract-plugin-manager";
 import { ProcessingResult } from "../../helpers/processing-result";
 import { LoggingPluginManager } from "../logging/logging-plugin-manager";
-import { ITestCase } from "../../test-cases/itest-case";
+import { ITestCase } from "./itest-case";
 import { AbstractTestCasePlugin, ITestCasePluginOptions } from "./abstract-test-case-plugin";
 import { nameof } from "ts-simple-nameof";
 
 export interface ITestCasePluginManagerOptions extends ITestCasePluginOptions, IPluginManagerOptions {
-    logMgr?: LoggingPluginManager;
+    _logMgr?: LoggingPluginManager;
 }
 
 /**
@@ -27,7 +27,7 @@ export class TestCasePluginManager extends AbstractPluginManager<AbstractTestCas
 
     constructor(options?: ITestCasePluginManagerOptions) {
         super(nameof(TestCasePluginManager).toLowerCase(), options);
-        this._logMgr = options?.logMgr || new LoggingPluginManager({name: nameof(TestCasePluginManager), pluginNames: []});
+        this._logMgr = options?._logMgr || new LoggingPluginManager({logName: nameof(TestCasePluginManager), pluginNames: []});
     }
 
     async getTestCase(testId: string): Promise<ITestCase> {

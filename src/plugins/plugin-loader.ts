@@ -3,6 +3,18 @@ import * as path from 'path';
 import { AbstractPlugin } from './abstract-plugin';
 
 class Loader {
+    /**
+     * attempts to load a package named `pluginName` and if
+     * that fails will search the filesystem, starting at the current
+     * execution directory and searching all subdirectories, for a file
+     * named `custom-plugin.js` which, if found, will be imported and a 
+     * new instance will be created followed by calling the {onLoad} function.
+     * 
+     * NOTE: each time this is called a new instance of the Plugin is created.
+     * @param pluginName the name of the plugin package or file to be imported
+     * @param options [optional] object containing options passed to the plugin constructor
+     * @returns an instance of the plugin
+     */
     async load<T extends AbstractPlugin<any>>(pluginName: string, options?: any): Promise<T> {
         let p: T = await this._validatePlugin<T>(pluginName, options);
         return p;
@@ -80,4 +92,18 @@ class Loader {
     }
 }
 
-export const PluginLoader = new Loader();
+/**
+ * responsible for finding and loading plugins based on a passed in 
+ * {pluginName} and optional {options}. any plugin loaded by this
+ * class must extend from {AbstractPlugin<any>} and would be expected
+ * to accept an {options} object in its constructor.
+ * ```typescript
+ * let plugin: CustomPlugin = await PluginLoader.load<CustomPlugin>('custom-plugin', {foo: 'bar'});
+ * ```
+ * NOTE: the above will attempt to load `custom-plugin` package and if
+ * that fails will search the filesystem, starting at the current
+ * execution directory and searching all subdirectories, for a file
+ * named `custom-plugin.js` which, if found, will be imported and a 
+ * new instance will be created followed by calling the {onLoad} function
+ */
+export const pluginLoader = new Loader();

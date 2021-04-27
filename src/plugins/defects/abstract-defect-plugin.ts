@@ -1,5 +1,5 @@
 import { AbstractPlugin, IPluginOptions } from "../abstract-plugin";
-import { IDefect } from "../../defects/idefect";
+import { IDefect } from "./idefect";
 
 export interface IDefectPluginOptions extends IPluginOptions {
     

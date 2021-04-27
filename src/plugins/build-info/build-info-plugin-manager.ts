@@ -4,7 +4,7 @@ import { AbstractBuildInfoPlugin, IBuildInfoPluginOptions } from "./ibuild-info-
 import { nameof } from "ts-simple-nameof";
 
 export interface IBuildInfoPluginManagerOptions extends IBuildInfoPluginOptions, IPluginManagerOptions {
-    logMgr?: LoggingPluginManager;
+    _logMgr?: LoggingPluginManager;
 }
 
 /**
@@ -25,7 +25,7 @@ export class BuildInfoPluginManager extends AbstractPluginManager<AbstractBuildI
 
     constructor(options?: IBuildInfoPluginManagerOptions) {
         super(nameof(BuildInfoPluginManager).toLowerCase(), options);
-        this._logMgr = options?.logMgr || new LoggingPluginManager({name: nameof(BuildInfoPluginManager), pluginNames: []});
+        this._logMgr = options?._logMgr || new LoggingPluginManager({logName: nameof(BuildInfoPluginManager), pluginNames: []});
     }
 
     async getBuildName(): Promise<string> {

@@ -1,11 +1,11 @@
 import { AbstractPlugin, IPluginOptions } from "../abstract-plugin";
-import { ITestResult } from "../../test-cases/itest-result";
+import { ITestResult } from "../test-cases/itest-result";
 import { LoggingLevel } from "./logging-level";
 import { rand } from "../../helpers/random-generator";
 import { nameof } from "ts-simple-nameof";
 
 export interface ILoggingPluginOptions extends IPluginOptions {
-    name?: string;
+    logName?: string;
     level?: string;
 }
 
@@ -15,9 +15,9 @@ export abstract class AbstractLoggingPlugin extends AbstractPlugin<ILoggingPlugi
     constructor(key: string, options?: ILoggingPluginOptions) {
         super(key, options);
     }
-    async name(): Promise<string> {
+    async logName(): Promise<string> {
         if (!this._name) {
-            this._name = await this.optionsMgr.getOption(nameof<ILoggingPluginOptions>(p => p.name), `${this.constructor.name}_${rand.guid}`);
+            this._name = await this.optionsMgr.getOption(nameof<ILoggingPluginOptions>(p => p.logName), `${this.constructor.name}_${rand.guid}`);
         }
         return this._name;
     }
@@ -30,5 +30,4 @@ export abstract class AbstractLoggingPlugin extends AbstractPlugin<ILoggingPlugi
     }
     abstract log(level: LoggingLevel, message: string): Promise<void>;
     abstract logResult(result: ITestResult): Promise<void>;
-    abstract finalise(): Promise<void>;
 }

@@ -1,6 +1,6 @@
 import { AbstractPlugin, IPluginOptions } from "../abstract-plugin";
 import { ProcessingResult } from "../../helpers/processing-result";
-import { ITestCase } from "../../test-cases/itest-case";
+import { ITestCase } from "./itest-case";
 
 export interface ITestCasePluginOptions extends IPluginOptions {
     

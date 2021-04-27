@@ -10,13 +10,13 @@ describe('TestWrapper', () => {
         console.log = consoleLog;
     });
     
-    it('creates a new TestLog instance with GUID name if no description or test cases provided', async () => {
+    it('does not initialise properties on creating a new instance', async () => {
         let tw: TestWrapper = new TestWrapper({
             expect: () => expect(true).toBeTruthy()
         });
         
         expect(tw.logMgr).toBeDefined();
-        expect(await tw.logMgr.name()).toMatch(/^[0-9a-f]{8}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{12}$/i);
+        expect(await tw.logMgr.logName()).toMatch(/^[0-9a-f]{8}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{12}$/i);
     });
 
     it('uses \'description\' as logMgr name if provided in options', async () => {
@@ -27,7 +27,7 @@ describe('TestWrapper', () => {
         });
         
         expect(tw.logMgr).toBeDefined();
-        expect(await tw.logMgr.name()).toBe('true_is_always_true');
+        expect(await tw.logMgr.logName()).toBe('true_is_always_true');
     });
 
     it('uses \'testCases\' as logMgr name if no description provided in options', async () => {
@@ -37,7 +37,7 @@ describe('TestWrapper', () => {
         });
         
         expect(tw.logMgr).toBeDefined();
-        expect(await tw.logMgr.name()).toBe('C1234_C2345');
+        expect(await tw.logMgr.logName()).toBe('C1234_C2345');
     });
 
     it('can supply itself to the expectation function', async () => {
@@ -61,7 +61,7 @@ describe('TestWrapper', () => {
         let options: TestWrapperOptions = {
             expect: () => expect(false).toBeFalsy(),
             testCases: ['C1234', 'C2345'], 
-            logMgr: logMgr
+            _logMgr: logMgr
         };
         let tw: TestWrapper = new TestWrapper(options);
         
@@ -76,7 +76,7 @@ describe('TestWrapper', () => {
         let options: TestWrapperOptions = {
             expect: () => false,
             testCases: ['C1234', 'C2345'], 
-            logMgr: logMgr
+            _logMgr: logMgr
         };
         let tw: TestWrapper = new TestWrapper(options);
 
@@ -93,7 +93,7 @@ describe('TestWrapper', () => {
                 throw 'mock failure exception';
             },
             testCases: ['C1234', 'C2345'],
-            logMgr: logMgr
+            _logMgr: logMgr
         };
         let tw: TestWrapper = new TestWrapper(options);
 
@@ -106,18 +106,18 @@ describe('TestWrapper', () => {
         let options: TestWrapperOptions = {
             expect: () => notExpected = true,
             testCases: ['C1234', 'C2345'], 
-            testCaseManager: new TestCasePluginManager()
+            _testCaseManager: new TestCasePluginManager()
         };
         let notExpected: boolean = false;
         let tw: TestWrapper = new TestWrapper(options);
-        let spy = spyOn(options.testCaseManager, 'shouldRun').and.callFake(async (testId: string): Promise<ProcessingResult> => {
+        let spy = spyOn(options._testCaseManager, 'shouldRun').and.callFake(async (testId: string): Promise<ProcessingResult> => {
             return {success: false, message: `testId '${testId}' should not be run`};
         });
 
         await tw.run();
 
-        expect(options.testCaseManager.shouldRun).toHaveBeenCalledWith('C1234');
-        expect(options.testCaseManager.shouldRun).toHaveBeenCalledWith('C2345');
+        expect(options._testCaseManager.shouldRun).toHaveBeenCalledWith('C1234');
+        expect(options._testCaseManager.shouldRun).toHaveBeenCalledWith('C2345');
         expect(notExpected).toBeFalsy();
     });
 
@@ -125,11 +125,11 @@ describe('TestWrapper', () => {
         let options: TestWrapperOptions = {
             expect: () => notExpected = true,
             testCases: ['C1234', 'C2345'], 
-            testCaseManager: new TestCasePluginManager()
+            _testCaseManager: new TestCasePluginManager()
         };
         let notExpected: boolean = false;
         let tw: TestWrapper = new TestWrapper(options);
-        spyOn(options.testCaseManager, 'shouldRun').and.callFake(async (testId: string): Promise<ProcessingResult> => {
+        spyOn(options._testCaseManager, 'shouldRun').and.callFake(async (testId: string): Promise<ProcessingResult> => {
             if (testId == 'C1234') {
                 return {success: false, message: `testId '${testId}' should not be run`};
             } else {
@@ -139,8 +139,8 @@ describe('TestWrapper', () => {
 
         await tw.run();
 
-        expect(options.testCaseManager.shouldRun).toHaveBeenCalledWith('C1234');
-        expect(options.testCaseManager.shouldRun).toHaveBeenCalledWith('C2345');
+        expect(options._testCaseManager.shouldRun).toHaveBeenCalledWith('C1234');
+        expect(options._testCaseManager.shouldRun).toHaveBeenCalledWith('C2345');
         expect(notExpected).toBeTruthy();
     });
 
@@ -148,11 +148,11 @@ describe('TestWrapper', () => {
         let options: TestWrapperOptions = {
             expect: () => notExpected = true,
             defects: ['AUTO-123', 'AUTO-222'], 
-            defectManager: new DefectPluginManager()
+            _defectManager: new DefectPluginManager()
         };
         let notExpected: boolean = false;
         let tw: TestWrapper = new TestWrapper(options);
-        spyOn(options.defectManager, 'getDefect').and.callFake(async (defectId: string): Promise<IDefect> => {
+        spyOn(options._defectManager, 'getDefect').and.callFake(async (defectId: string): Promise<IDefect> => {
             let d: IDefect = {id: defectId, title: `[${defectId}] fake defect title`} as IDefect;
             if (defectId == 'AUTO-123') {
                 d.status = DefectStatus.open;
@@ -161,13 +161,13 @@ describe('TestWrapper', () => {
             }
             return d;
         });
-        spyOn(options.defectManager, 'findDefects').and.callThrough();
+        spyOn(options._defectManager, 'findDefects').and.callThrough();
 
         await tw.run();
 
-        expect(options.defectManager.getDefect).toHaveBeenCalledWith('AUTO-123');
-        expect(options.defectManager.getDefect).not.toHaveBeenCalledWith('AUTO-222');
-        expect(options.defectManager.findDefects).not.toHaveBeenCalled();
+        expect(options._defectManager.getDefect).toHaveBeenCalledWith('AUTO-123');
+        expect(options._defectManager.getDefect).not.toHaveBeenCalledWith('AUTO-222');
+        expect(options._defectManager.findDefects).not.toHaveBeenCalled();
         expect(notExpected).toBeFalsy();
     });
 
@@ -175,21 +175,21 @@ describe('TestWrapper', () => {
         let options: TestWrapperOptions = {
             expect: () => notExpected = true,
             defects: ['AUTO-123', 'AUTO-222'],
-            defectManager: new DefectPluginManager()
+            _defectManager: new DefectPluginManager()
         };
         let notExpected: boolean = false;
         let tw: TestWrapper = new TestWrapper(options);
-        spyOn(options.defectManager, 'getDefect').and.callFake(async (defectId: string): Promise<IDefect> => {
+        spyOn(options._defectManager, 'getDefect').and.callFake(async (defectId: string): Promise<IDefect> => {
             let d: IDefect = {id: defectId, title: `[${defectId}] fake defect title`, status: DefectStatus.closed} as IDefect;
             return d;
         });
-        spyOn(options.defectManager, 'findDefects').and.callThrough();
+        spyOn(options._defectManager, 'findDefects').and.callThrough();
 
         await tw.run();
 
-        expect(options.defectManager.getDefect).toHaveBeenCalledWith('AUTO-123');
-        expect(options.defectManager.getDefect).toHaveBeenCalledWith('AUTO-222');
-        expect(options.defectManager.findDefects).not.toHaveBeenCalled();
+        expect(options._defectManager.getDefect).toHaveBeenCalledWith('AUTO-123');
+        expect(options._defectManager.getDefect).toHaveBeenCalledWith('AUTO-222');
+        expect(options._defectManager.findDefects).not.toHaveBeenCalled();
         expect(notExpected).toBeTruthy();
     });
 
@@ -197,11 +197,11 @@ describe('TestWrapper', () => {
         let options: TestWrapperOptions = {
             expect: () => notExpected = true,
             testCases: ['C1234', 'C2345'],
-            defectManager: new DefectPluginManager()
+            _defectManager: new DefectPluginManager()
         };
         let notExpected: boolean = false;
         let tw: TestWrapper = new TestWrapper(options);
-        spyOn(options.defectManager, 'findDefects').and.callFake(async (searchTerm: string): Promise<IDefect[]> => {
+        spyOn(options._defectManager, 'findDefects').and.callFake(async (searchTerm: string): Promise<IDefect[]> => {
             let defects: IDefect[] = [
                 {id: 'AUTO-123', title: `[${searchTerm}] fake defect title`, status: DefectStatus.closed} as IDefect,
                 {id: 'AUTO-124', title: `[${searchTerm}] fake defect title`, status: DefectStatus.open} as IDefect,
@@ -211,8 +211,8 @@ describe('TestWrapper', () => {
 
         await tw.run();
 
-        expect(options.defectManager.findDefects).toHaveBeenCalledWith('C1234');
-        expect(options.defectManager.findDefects).not.toHaveBeenCalledWith('C2345');
+        expect(options._defectManager.findDefects).toHaveBeenCalledWith('C1234');
+        expect(options._defectManager.findDefects).not.toHaveBeenCalledWith('C2345');
         expect(notExpected).toBeFalsy();
     });
 

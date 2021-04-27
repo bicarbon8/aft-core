@@ -1,86 +1,96 @@
 import { cloneDeep } from "lodash";
 import { LoggingPluginManager } from "../plugins/logging/logging-plugin-manager";
-import { TestStatus } from "../test-cases/test-status";
-import { ITestResult } from "../test-cases/itest-result";
 import { convert } from "../helpers/converter";
 import { ProcessingResult } from "../helpers/processing-result";
 import { TestCasePluginManager } from "../plugins/test-cases/test-case-plugin-manager";
-import { IDefect } from "../defects/idefect";
-import { DefectStatus } from "../defects/defect-status";
+import { DefectStatus } from "../plugins/defects/defect-status";
 import { rand } from "../helpers/random-generator";
 import { ellide } from "../helpers/ellide";
 import { DefectPluginManager } from "../plugins/defects/defect-plugin-manager";
 import { BuildInfoPluginManager } from "../plugins/build-info/build-info-plugin-manager";
 import { Func } from "../helpers/custom-types";
+import { IDefect } from "../plugins/defects/idefect";
+import { TestStatus } from "../plugins/test-cases/test-status";
+import { ITestResult } from "../plugins/test-cases/itest-result";
 
 export interface TestWrapperOptions {
+    /**
+     * a function that returns a boolean result indicating its
+     * success, for example a {Jasmine.expect(..).toBe(...)}
+     */
     expect: Func<TestWrapper, boolean | PromiseLike<boolean>>;
-    buildInfoManager?: BuildInfoPluginManager;
+    /**
+     * [OPTIONAL] an array of Defect IDs associated with this test
+     * if an {AbstractDefectPlugin} implementation is loaded these
+     * IDs will be checked to ensure the test should proceed
+     */
     defects?: string[];
-    defectManager?: DefectPluginManager;
-    logMgr?: LoggingPluginManager;
-    testCases?: string[];
-    testCaseManager?: TestCasePluginManager;
+    /**
+     * [OPTIONAL] description of the test being run and value used
+     * for the {LoggingPluginManager.logName}
+     */
     description?: string;
+    /**
+     * [OPTIONAL] an array of Test Case IDs associated with this test
+     * if an {AbstractTestCasePlugin} implementation is loaded these
+     * IDs will be checked to ensure the test should proceed
+     */
+    testCases?: string[];
+    
+    /**
+     * [OPTIONAL] if not passed in the {BuildInfoPluginManager.instance()}
+     * will be used instead
+     */
+    _buildInfoManager?: BuildInfoPluginManager;
+    /**
+     * [OPTIONAL] if not passed in the {DefectPluginManager.instance()}
+     * will be used instead
+     */
+    _defectManager?: DefectPluginManager;
+    /**
+     * [OPTIONAL] if not passed in a new {LoggingPluginManager} instance
+     * will be created with a name matching the {description} or a GUID
+     * in the case of no {description}
+     */
+    _logMgr?: LoggingPluginManager;
+    /**
+     * [OPTIONAL] if not passed in the {TestCasePluginManager.instance()}
+     * will be used instead
+     */
+    _testCaseManager?: TestCasePluginManager;
 }
 
 /**
  * provides pre-test execution filtering based on specified 
  * test IDs or defect IDs and post-test results logging. usage
- * is intended to be managed through the `should(expectation, options)`
+ * is intended to be managed through the {should(options)}
  * function via:
  * ```
  * await should(() => expect(true).toBeTruthy(), {description: 'expect true is truthy'});
  * ```
  */
 export class TestWrapper {
-    private _expectation: Func<TestWrapper, any>;
-    private _description: string;
-    private _logMgr: LoggingPluginManager;
-    private _testCases: string[] = [];
-    private _defects: string[] = [];
-    private _errors: string[] = [];
+    readonly expectation: Func<TestWrapper, any>;
+    readonly description: string;
+    readonly logMgr: LoggingPluginManager;
+
+    private _testCases: string[];
+    private _defects: string[];
+    private _errors: string[];
     private _startTime: number;
-    private _testCaseManager: TestCasePluginManager = null;
-    private _defectManager: DefectPluginManager = null;
-    private _buildInfoManager: BuildInfoPluginManager = null;
 
-    /**
-     * this class is intended to be utilised via the `should(expectation, options)` function
-     * and not directly...
-     * @param expectation a function containing some expectation like `expect(true).toBeFalsy()` or
-     * `'foo' == 'foo'` where the function either accepts no arguments or one argument of type `TestWrapper`
-     * ex:
-     * ```
-     * let tw: TestWrapper = new TestWrapper(async (t) => {
-     *     await t.logMgr().info("using the TestWrapper's logMgr");
-     *     let foo = 'foo';
-     *     expect(foo).toEqual('foo');
-     * });
-     * await tw.run();
-     * ```
-     * @param options optional `TestWrapperOptions` allowing test IDs, defect IDs and a `description` to be passed in
-     */
+    private readonly _testCaseManager: TestCasePluginManager;
+    private readonly _defectManager: DefectPluginManager;
+    private readonly _buildInfoManager: BuildInfoPluginManager;
+
     constructor(options: TestWrapperOptions) {
-        this._expectation = options.expect;
-        
-        this._initialiseDescription(options);
-        this._initialiselogMgr(options);
-        this._initialiseTestCases(options);
-        this._initialiseDefects(options);
-        this._initialiseBuildInfo(options);
-    }
-
-    get expectation(): Func<TestWrapper, any> {
-        return this._expectation;
-    }
-
-    get description(): string {
-        return this._description;
-    }
-
-    get logMgr(): LoggingPluginManager {
-        return this._logMgr;
+        this.expectation = options.expect;
+        this.description = this._initialiseDescription(options);
+        this.logMgr = this._initialiselogMgr(options);
+        this._testCaseManager = this._initialiseTestCases(options);
+        this._defectManager = this._initialiseDefects(options);
+        this._buildInfoManager = this._initialiseBuildInfo(options);
+        this._initialiseErrors(options);
     }
 
     get testCases(): string[] {
@@ -101,7 +111,21 @@ export class TestWrapper {
     
     /**
      * checks if the expectation should be executed and if so runs it
-     * and returns the result via an `IProcessingResult`
+     * and returns the result via an {ProcessingResult}.
+     * 
+     * usage:
+     * ```typescript
+     * let tw: TestWrapper = new TestWrapper({
+     *     expect: async (t) => {
+     *         await t.logMgr().info("using the TestWrapper's LoggingPluginManager");
+     *         let foo = 'foo';
+     *         return expect(foo).toEqual('foo');
+     *     }
+     * });
+     * await tw.run();
+     * ```
+     * @returns a {ProcessingResult} specifying the result of execution of
+     * the passed in expectation
      */
     async run(): Promise<ProcessingResult> {
         this._startTime = new Date().getTime();
@@ -112,38 +136,46 @@ export class TestWrapper {
         return result;
     }
 
-    private _initialiseDescription(options: TestWrapperOptions): void {
+    private _initialiseDescription(options: TestWrapperOptions): string {
+        let desc: string;
         if (options.description) {
-            this._description = options.description;
+            desc = options.description;
         } else {
             if (options.testCases?.length) {
-                this._description = `${options.testCases?.join(' ')}`
+                desc = `${options.testCases?.join(' ')}`
             } else {
-                this._description = rand.guid;
+                desc = rand.guid;
             }
         }
+        return desc;
     }
 
-    private _initialiselogMgr(options: TestWrapperOptions): void {
-        this._logMgr = options.logMgr || new LoggingPluginManager({name: this.description});
+    private _initialiselogMgr(options: TestWrapperOptions): LoggingPluginManager {
+        return options._logMgr || new LoggingPluginManager({logName: this.description});
     }
 
-    private _initialiseTestCases(options: TestWrapperOptions): void {
-        this._testCaseManager = options.testCaseManager || TestCasePluginManager.instance();
+    private _initialiseTestCases(options: TestWrapperOptions): TestCasePluginManager {
+        this._testCases = [];
         options.testCases?.forEach(c => {
             this._testCases.push(c);
         });
+        return options._testCaseManager || TestCasePluginManager.instance();
     }
 
-    private _initialiseDefects(options: TestWrapperOptions): void {
-        this._defectManager = options.defectManager || DefectPluginManager.instance();
+    private _initialiseDefects(options: TestWrapperOptions): DefectPluginManager {
+        this._defects = [];
         options.defects?.forEach(d => {
             this._defects.push(d);
         });
+        return options._defectManager || DefectPluginManager.instance();
     }
 
-    private _initialiseBuildInfo(options: TestWrapperOptions) {
-        this._buildInfoManager = options.buildInfoManager || BuildInfoPluginManager.instance();
+    private _initialiseBuildInfo(options: TestWrapperOptions): BuildInfoPluginManager {
+        return options._buildInfoManager || BuildInfoPluginManager.instance();
+    }
+
+    private _initialiseErrors(options: TestWrapperOptions) {
+        this._errors = [];
     }
 
     /**
@@ -172,13 +204,13 @@ export class TestWrapper {
         for (var i=0; i<results.length; i++) {
             let result: ITestResult = results[i];
             try {
-                await this._logMgr.logResult(result);
+                await this.logMgr.logResult(result);
             } catch (e) {
-                await this._logMgr.warn(`unable to log test result for test '${result.testId || result.resultId}' due to: ${e}`);
+                await this.logMgr.warn(`unable to log test result for test '${result.testId || result.resultId}' due to: ${e}`);
             }
         }
 
-        this.logMgr.finalise();
+        this.logMgr.dispose();
     }
 
     private async _logMessage(status: TestStatus, message: string): Promise<void> {
@@ -207,11 +239,11 @@ export class TestWrapper {
     private async _beginProcessing(): Promise<ProcessingResult> {
         let status: TestStatus = TestStatus.Untested;
         let message: string;
-        if (this._expectation) {
+        if (this.expectation) {
             let shouldRun: ProcessingResult = await this._shouldRun();
             if (shouldRun.success) {
                 try {
-                    let result = await Promise.resolve(this._expectation(this));
+                    let result = await Promise.resolve(this.expectation(this));
                     if (result !== false) {
                         status = TestStatus.Passed;
                     } else {

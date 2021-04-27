@@ -41,4 +41,7 @@ export class MockDefectPlugin extends AbstractDefectPlugin {
                 return defects;
         }
     }
+    async dispose(error?: Error): Promise<void> {
+        /* do nothing */
+    }
 }

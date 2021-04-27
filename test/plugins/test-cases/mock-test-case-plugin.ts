@@ -43,4 +43,7 @@ export class MockTestCasePlugin extends AbstractTestCasePlugin {
                 return {obj: c3, message: rand.getString(22), success: rand.boolean};
         }
     }
+    async dispose(error?: Error): Promise<void> {
+        /* do nothing */
+    }
 }

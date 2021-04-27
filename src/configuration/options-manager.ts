@@ -1,6 +1,11 @@
 import { aftconfigMgr } from "./aftconfig-manager";
 
 /**
+ * **WARNING**
+ * 
+ * DO NOT USE FOR COMPLEX CLASSES! ONLY SIMPLE JSON OBJECTS
+ * SUPPORTED
+ * 
  * manages the retrieval of options based on either a passed
  * in set of options or by looking in the `aftconfig.json` section
  * specified by the {key} passed to the constructor followed by any

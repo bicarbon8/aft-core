@@ -1,5 +1,4 @@
-import { LoggingLevel } from "../../../src/plugins/logging/logging-level";
-import { ITestResult } from "../../../src/test-cases/itest-result";
+import { ITestResult, LoggingLevel } from "../../../src";
 import { LogMessage } from "./log-message";
 
 class LoggingPluginStore {
@@ -7,7 +6,7 @@ class LoggingPluginStore {
     results: ITestResult[];
     lvl: LoggingLevel;
     en: boolean;
-    finalised: boolean;
+    disposed: boolean;
     onLoad: boolean;
 
     constructor() {
@@ -19,7 +18,7 @@ class LoggingPluginStore {
         this.results = [];
         this.lvl = LoggingLevel.info;
         this.en = true;
-        this.finalised = false;
+        this.disposed = false;
         this.onLoad = false;
     }
 }

@@ -1,4 +1,4 @@
-import { ellide } from '../helpers/ellide';
+import { ellide } from '../../helpers/ellide';
 
 export class TestException {
     Type: string;
