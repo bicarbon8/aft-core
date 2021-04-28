@@ -11,11 +11,11 @@ describe('Sample Test', () => {
         let feature: FeatureObj = new FeatureObj();
         /**
          * the `should(options)` function
-         * checks any specified `ITestCaseHandlerPlugin`
-         * and `IDefectHandlerPlugin` implementations
+         * checks any specified `AbstractTestCasePlugin`
+         * and `AbstractDefectPlugin` implementations
          * to ensure the test should be run. It will then
-         * report to any `ILoggingPlugin` implementations
-         * with a `TestResult` indicating the success,
+         * report to any `AbstractLoggingPlugin` implementations
+         * with an `ITestResult` indicating the success,
          * failure or skipped status
          */
         await should({expect: () => expect(feature.performAction()).toBe('result of action'),
@@ -151,6 +151,7 @@ export class TestRailTestCasePlugin extends AbstractTestCasePlugin {
     async shouldRun(testId: string): Promise<ProcessingResult> {
         return await this._client.shouldRun(testId);
     }
+    async dispose(error?: Error) { /* perform some action if needed */ }
 }
 ```
 ### Defect Plugin
@@ -180,5 +181,6 @@ export class BugzillaDefectPlugin extends AbstractDefectPlugin {
     async findDefects(searchTerm: string): Promise<IDefect[]> {
         return await this._client.findDefects(searchTerm);
     }
+    async dispose(error?: Error) { /* perform some action if needed */ }
 }
 ```
