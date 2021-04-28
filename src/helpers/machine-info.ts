@@ -1,7 +1,7 @@
 import * as os from 'os';
 
-export module MachineInfo {
-    export async function ip(): Promise<string> {
+class Machine {
+    async getIp(): Promise<string> {
         var interfaces = os.networkInterfaces();
         var addresses = [];
         for (var k in interfaces) {
@@ -19,11 +19,28 @@ export module MachineInfo {
         }
     }
 
-    export async function name(): Promise<string> {
+    async getName(): Promise<string> {
         return os.hostname();
     }
 
-    export async function user(): Promise<string> {
+    async getUser(): Promise<string> {
         return os.userInfo().username;
+    }
+}
+
+export interface MachineInfoData {
+    ip?: string;
+    name?: string;
+    user?: string;
+}
+
+export module MachineInfo {
+    const _machine: Machine = new Machine();
+    export async function get(): Promise<MachineInfoData> {
+        return {
+            ip: await _machine.getIp(),
+            name: await _machine.getName(),
+            user: await _machine.getUser()
+        };
     }
 }

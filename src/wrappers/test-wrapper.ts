@@ -210,7 +210,7 @@ export class TestWrapper {
             }
         }
 
-        this.logMgr.dispose();
+        await this.logMgr.dispose();
     }
 
     private async _logMessage(status: TestStatus, message: string): Promise<void> {

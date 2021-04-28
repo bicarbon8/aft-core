@@ -1,6 +1,9 @@
 # AFT-Core
 the Automated Functional Testing (AFT) library provides a framework for creating Functional Test Automation that needs to integrate with external systems and can be used for post-deployment verification testing, end-user acceptance testing, end-to-end testing as well as high-level integration testing scenarios. it enables test execution flow control and reporting as well as streamlined test development for JavaScript and TypeScript test automation by integrating with common test framworks as well as external test and defect tracking systems (via a robust plugin structure).
 
+## Installation
+`> npm i aft-core`
+
 ## Example Jasmine Test:
 ```typescript
 describe('Sample Test', () => {
