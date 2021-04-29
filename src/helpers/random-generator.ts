@@ -1,34 +1,30 @@
 import * as uuid from 'uuid';
 
-export module RandomGenerator {
-    export const ALPHAS: string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    export const NUMERICS: string = "0123456789";
-    export const SPECIALS: string = "!£$%^&*()_+=-[];'#,./{}:@~<>?";
-    export const EXTENDED: string = "ÀÁÂÃÄÅĀƁƂÇĈĊĎĐÈÉÊËƑĜĞĠĤĦÌÍÎÏĴĶĹĿŁÑŃÒÓÔÕÖƤɊŔŖŚŜŢŤŦÙÚÛÜŴŶŽ";
+export class RandomGenerator {
+    readonly ALPHAS: string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    readonly NUMERICS: string = "0123456789";
+    readonly SPECIALS: string = "!£$%^&*()_+=-[];'#,./{}:@~<>?";
+    readonly EXTENDED: string = "ÀÁÂÃÄÅĀƁƂÇĈĊĎĐÈÉÊËƑĜĞĠĤĦÌÍÎÏĴĶĹĿŁÑŃÒÓÔÕÖƤɊŔŖŚŜŢŤŦÙÚÛÜŴŶŽ";
 
-    export function getString(length?: number, alphas?: boolean, numerics?: boolean, specials?: boolean, extended?: boolean): string {
-        if (alphas === undefined) { alphas = true; }
-        if (numerics === undefined) { numerics = false; }
-        if (specials === undefined) { specials = false; }
-        if (extended === undefined) { extended = false; }
+    getString(length?: number, alphas: boolean = true, numerics: boolean = false, specials: boolean = false, extended: boolean = false): string {
         let choices: string = '';
-        if (alphas) { choices += RandomGenerator.ALPHAS; }
-        if (numerics) { choices += RandomGenerator.NUMERICS; }
-        if (specials) { choices += RandomGenerator.SPECIALS; }
-        if (extended) { choices += RandomGenerator.EXTENDED; }
+        if (alphas) { choices += this.ALPHAS; }
+        if (numerics) { choices += this.NUMERICS; }
+        if (specials) { choices += this.SPECIALS; }
+        if (extended) { choices += this.EXTENDED; }
 
         return this.getStringFrom(length, choices);
     }
 
-    export function getInt(min: number, max: number): number {
+    getInt(min: number, max: number): number {
         return Math.floor(this.getFloat(min, max));
     }
 
-    export function getFloat(min: number, max: number): number {
+    getFloat(min: number, max: number): number {
         return Math.random() * (max - min) + min;
     }
 
-    export function getStringFrom(length?: number, selectionCharacters: string = RandomGenerator.ALPHAS + RandomGenerator.NUMERICS + RandomGenerator.SPECIALS + RandomGenerator.EXTENDED): string {
+    getStringFrom(length?: number, selectionCharacters: string = this.ALPHAS + this.NUMERICS + this.SPECIALS + this.EXTENDED): string {
         if (length === undefined) {
             length = this.getInt(1, 101);
         }
@@ -47,11 +43,7 @@ export module RandomGenerator {
         return characters;
     }
 
-    export function getGuid(): string {
-        return uuid.v4();
-    }
-
-    export function getEnum<T>(anEnum: T): T[keyof T] {
+    getEnum<T>(anEnum: T): T[keyof T] {
         let enumValues: T[keyof T][] = Object.keys(anEnum)
           .map(n => Number.parseInt(n))
           .filter(n => !Number.isNaN(n)) as any as T[keyof T][];
@@ -60,10 +52,14 @@ export module RandomGenerator {
         return randomEnumValue;
     }
 
-    export function getBoolean(): boolean {
+    get guid(): string {
+        return uuid.v4();
+    }
+
+    get boolean(): boolean {
         let i: number = this.getInt(0, 100);
         return i < 50;
     }
 }
 
-export const RG = RandomGenerator;
+export const rand = new RandomGenerator();
