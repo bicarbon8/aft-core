@@ -4,7 +4,8 @@ the Automated Functional Testing (AFT) library provides a framework for creating
 ## Installation
 `> npm i aft-core`
 
-## Example Jasmine Test:
+## Usage:
+### Example Jasmine Test:
 ```typescript
 describe('Sample Test', () => {
     it('can perform a demonstration of AFT-Core', async () => {
@@ -61,10 +62,24 @@ which would output the following logs:
 5:29:56 PM - more_complex_expectation_actions - PASS  - C2345
 5:29:56 PM - more_complex_expectation_actions - PASS  - C3344
 ```
-## Benefits of AFT
+## Helpers / Utilities
+the AFT-Core package contains several helper and utility classes, interfaces and functions to make functional testing and test development easier. These include:
+- **rand** - random string, boolean, number and uuid generation
+- **convert** - string manipulation like Base64 encode / decode and replacement
+- **ellide** - string elliding supporting beginning, middle and end ellipsis
+- **wait** - continually retry some action until success or a maximum time elapses
+- **using** - automatically call the `dispose` function of a class that implements the `IDisposable` interface when done
+- **MachineInfo** - get details of the host machine and user running the tests
+- **OptionsManager** - read in configuration settings from a passed in `object` with fallback to the `aftconfig.json` file which enables specifying environment variables for values
+- **Action&lt;T&gt;** - a function accepting one typed argument `T` and returning `void`
+- **Func&lt;T, Tr&gt;** - a function accepting one typed argument `T` and returning a specified type `Tr`
+- **Clazz&lt;T&gt;** - a class of type `T` accepting 0 or more arguments on the constructor
+## Plugins
 the AFT-Core package on it's own contains some helpers for testing, but the actual benefit comes from the plugins. Because the above logging will also send to any registered logging plugins, it becomes easy to create logging plugins that send to any external system such as TestRail or to log results to Elasticsearch. Additionally, before running any _expectation_ passed to a `should(options)` function, AFT will confirm if the expectation should actually be run based on the results of a query to any supplied `AbstractTestCasePlugin` implementations and a subsequent query to any supplied `AbstractDefectPlugin` implementations. 
 ### Logging Plugins
-to create a logging plugin you simply need to extend from the `AbstractLoggingPlugin` class in a class with a constructor accepting a simple object and from the constructor, call `super(key, options)` where the `key` is the name of the section in your `aftconfig.json` where configuration can be specified for your plugin. Then, in your `aftconfig.json` add the following (where plugins `console-logging-plugin.js` is bundled with `aft-core` and `logging-plugin2.js` is some bespoke plugin that is contained within the test execution directory or a subdirectory of it and `loggingpluginmanager` is the logging plugin manager):
+AFT-Core comes bundled with a built-in `ConsoleLoggingPlugin` which can be enabled by adding `console-logging-plugin` to the `pluginNames` array under the `loggingpluginmanager` section of your `aftconfig.json`
+
+To create a logging plugin you simply need to extend from the `AbstractLoggingPlugin` class in a class with a constructor accepting a simple object and from the constructor, call `super(key, options)` where the `key` is the name of the section in your `aftconfig.json` where configuration can be specified for your plugin. Then, in your `aftconfig.json` add the following (where plugins `console-logging-plugin.js` is bundled with `aft-core` and `logging-plugin2.js` is some bespoke plugin that is contained within the test execution directory or a subdirectory of it and `loggingpluginmanager` is the logging plugin manager):
 ```json
 {
     "loggingpluginmanager": {
